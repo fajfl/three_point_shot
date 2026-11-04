@@ -139,7 +139,8 @@ function doMove(p){
 }
 function doUlt(p){
   if(p.en<100)return;p.en=0;const t=TP[p.type];p.ultT=G.t+(p.type==='slash'?9:7);
-  G.shake=Math.max(G.shake,.4);emit('ult',{p:p.id,name:t.ult});
+  const description=p.type==='shoot'?'7 秒綠區變大、投籃更抗干擾':p.type==='slash'?'9 秒擴大扣籃距離、隔扣更強':'7 秒加速、防抄截與空中壓迫';
+  G.shake=Math.max(G.shake,.4);emit('ult',{p:p.id,name:t.ult,description});
 }
 function doFake(p){setS(p,'fake');p.fakeT=G.t;p.baitGiven=false;p.baitUntil=0;emit('fake',{p:p.id})}
 function greenW(p){
@@ -152,6 +153,20 @@ function greenW(p){
   if(p.ride)w*=.72;
   if(dH(p)>ARC+1.7)w*=.7;
   return w;
+}
+// 空中壓迫：貼身起跳最強，擦肩掠過或距離較遠仍有微弱影響。
+function contestPenalty(p){
+  const o=opp(p),gap=dist(p,o);
+  const jumpAge=G.t-o.jumpT;
+  if(jumpAge<0||jumpAge>.95||o.y<.08||o.s==='fall'||o.s==='getup')return 0;
+  const handGap=hyp(p.x-(o.x+o.fx*.4),p.z-(o.z+o.fz*.4));
+  const facing=(p.x-o.x)*o.fx+(p.z-o.z)*o.fz;
+  let penalty=handGap<1.4&&gap<1.75&&facing>-.5?.2:
+              handGap<2.15&&gap<2.4?.11:
+              handGap<3.15?.04:0;
+  if(ultOn(o)&&o.type==='wall')penalty=Math.min(.28,penalty*1.3);
+  if(ultOn(p)&&p.type==='shoot')penalty*=.55;
+  return penalty;
 }
 function canDunk(p){
   const d=dH(p);
@@ -188,15 +203,10 @@ function release(p){
   const err=Math.abs(p.meter-SHOT_MID),w=greenW(p);
   const q=err<=w?'green':err<=w*2.4?'ok':'bad';
   if(!p.jumped){p.vy=3.2;p.jumped=true}
-  const o=opp(p),gap=dist(p,o);
-  const facing=(p.x-o.x)*o.fx+(p.z-o.z)*o.fz;
-  const handGap=hyp(p.x-(o.x+o.fx*.4),p.z-(o.z+o.fz*.4));
-  const jumping=o.s==='jump'&&o.y>.18;
-  const penalty=!jumping?0:(handGap<1.55&&gap<1.85&&facing>-.6?.16:handGap<2.25?.08:handGap<3.05?.035:0);
-  const contested=penalty>0;
+  const penalty=contestPenalty(p),contested=penalty>0;
   const make=Math.random()<(q==='green'?1-penalty:(q==='ok'?.65:.15)*(1-penalty*1.45));
   if(q==='green'){G.greenFlash=1;gain(p,15);if(p.human)G.stats.green++}
-  emit('release',{p:p.id,q,err,early:p.meter<SHOT_MID,contested});
+  emit('release',{p:p.id,q,err,early:p.meter<SHOT_MID,contested,penalty});
   setS(p,'rel');
   launch(p,make,isThree(p)?3:2,q);
 }
@@ -620,7 +630,7 @@ function restore(st){
   BK.forEach((k,i)=>{G.ball[k]=st.b[i]});
   G.p.forEach((p,i)=>{const r=st.p[i];PK.forEach((k,j)=>{p[k]=r[0][j]});p.cds=r[1];p.pend=r[2];p.spinS=r[3];p.dk=r[4]});
 }
-return{clamp,lerp,hyp,PI,rnd,gauss,pick,TP,CD,MV,LV,H,GR,BR,RIMY,HOOP,RIM,BOARDZ,W,D,ARC,CORNER,WIN,LAY,SHOT_MID,G,INP,step,advance,snap,restore,newGame,toCheck,knock,setS,startShot,ballPos,opp,dH,isThree,toHoop,dist,speed,DOWN,canDunk,moveKind,spinReady,ultOn,greenW};
+return{clamp,lerp,hyp,PI,rnd,gauss,pick,TP,CD,MV,LV,H,GR,BR,RIMY,HOOP,RIM,BOARDZ,W,D,ARC,CORNER,WIN,LAY,SHOT_MID,G,INP,step,advance,snap,restore,newGame,toCheck,knock,setS,startShot,ballPos,opp,dH,isThree,toHoop,dist,speed,DOWN,canDunk,moveKind,spinReady,ultOn,greenW,contestPenalty};
 }
 
 export { createSim };
