@@ -103,7 +103,7 @@ function strike(a,D,k,easy=0){
 function moveKind(p){
   if(p.mag<.2||hyp(p.ix,p.iz)<.25)return'halt';
   const f=toHoop(p),l=hyp(p.ix,p.iz),d=(p.ix*f.x+p.iz*f.z)/l;
-  if(d>.65)return spinReady(p)?'spin':'burst';
+  if(d>.65)return spinReady(p)&&d<.94?'spin':'burst';
   if(d<-.65)return'step';
   return dist(p,opp(p))<1.65?'behind':'cross';
 }
