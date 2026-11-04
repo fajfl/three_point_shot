@@ -191,7 +191,7 @@ const LV={
   king:{name:'河濱阿伯',pull:.75,react:.15,read:.8,aim:.06,move:.88,steal:.8,bite:.2,block:.75}
 };
 const mk=(id)=>({id,human:false,x:0,z:8,y:0,vy:0,vx:0,vz:0,ax:0,az:0,fx:0,fz:-1,ix:0,iz:0,mag:0,type:'slash',en:0,ultT:0,cds:{},last:'',strikes:0,strikeT:-9,burstV:6.6,stepShot:false,swatT:-9,pull:false,ride:false,shoeLost:false,shoeX:0,shoeZ:0,shoeT:0,taunt:'',fade:false,moveT:-9,spinS:null,spinDir:1,euS:1,euHit:false,s:'free',t:0,dur:0,bal:0,tapT:-9,c:false,pc:false,pend:null,cd:0,hand:1,handV:1,drib:0,meter:0,jumped:false,stepT:-9,noPick:0,a:false,b:false,pa:false,pb:false,skid:0,tx:0,tz:8,hist:[],aiT:0,aiCd:0,aiG:null,aiGT:0,aiRel:.8,aiP:null,aiRe:9,aiB:null,aiF:false,struck:false,relDone:false,dk:null,fakeT:-10,baitGiven:false,baitUntil:0,jumpT:-10,blockChaseUntil:0,chaseUntil:0,whiffUntil:0});
-const G={me:0,online:false,quiet:false,foeType:null,lat:[0,0],myType:'slash',cele:-1,celeT:0,finale:false,winner:-1,t:0,phase:'check',pt:0,off:0,next:1,holder:null,clock:12,needClear:false,score:[0,0],attract:true,level:'reg',slow:0,camT:0,camP:null,shake:0,rimKick:0,netKick:0,greenFlash:0,
+const G={me:0,online:false,quiet:false,foeType:null,lat:[0,0],myType:'slash',cele:-1,celeT:0,finale:false,winner:-1,t:0,phase:'check',pt:0,off:0,next:1,holder:null,clock:12,needClear:false,looseT:0,score:[0,0],attract:true,level:'reg',slow:0,camT:0,camP:null,shake:0,rimKick:0,netKick:0,greenFlash:0,
   ball:{mode:'held',x:0,y:1,z:8,vx:0,vy:0,vz:0,make:false,pts:0,owner:0,tf:0,touched:false,q:'',spin:0},
   p:[mk(0),mk(1)],stats:{ankle:[0,0],green:0},fx:[],hintN:{}};
 const mkI=()=>({x:0,z:0,mag:0,a:false,b:false,c:false,tapA:false,tapB:false,tapC:false});
@@ -234,7 +234,7 @@ function newGame(attract,level){
   toCheck(attract||G.online?(Math.random()<.5?0:1):0);
 }
 function toCheck(off){
-  G.off=off;G.phase='check';G.pt=0;G.needClear=false;G.clock=12;
+  G.off=off;G.phase='check';G.pt=0;G.needClear=false;G.looseT=0;G.clock=12;
   const a=G.p[off],d=G.p[1-off],b=G.ball;
   G.holder=a;b.mode='held';b.pts=0;b.make=false;b.touched=false;
   for(const p of G.p){setS(p,'free');p.pend=null;p.bal=0;p.vy=0;p.y=0;p.cd=0;p.taunt='';p.pull=false;p.ride=false;p.fade=false;p.stepShot=false;p.strikes=0;p.strikeT=-9;p.ax=p.az=0;p.aiG=null;p.aiB=null;p.aiF=false;p.dk=null;p.fakeT=-10;p.baitGiven=false;p.baitUntil=0;p.jumpT=-10;p.blockChaseUntil=0;p.chaseUntil=0;p.whiffUntil=0}
@@ -243,7 +243,7 @@ function toCheck(off){
 }
 function endPossession(nextOff,wait){G.phase='dead';G.pt=wait;G.next=nextOff}
 function give(p){
-  const b=G.ball;G.holder=p;b.mode='held';b.pts=0;b.make=false;
+  const b=G.ball;G.holder=p;G.looseT=0;b.mode='held';b.pts=0;b.make=false;
   if(p.id!==G.off){
     // 每次球權真正交換時，兩邊的斷踝失誤都重新計數。
     for(const q of G.p){q.strikes=0;q.strikeT=-9;q.bal=0;q.pend=null}
@@ -785,6 +785,14 @@ function step(dt){
     G.clock-=dt;
     if(G.clock<=0){G.clock=0;const h=G.holder;if(h.s==='hold'){h.s='free'}emit('clock');looseBall(h,1);endPossession(1-G.off,.75)}
   }
+  // 防止極端情況下球卡在場邊、雙方都撿不到，導致遊戲永久停在同一回合。
+  if(G.phase==='play'&&!G.holder&&(G.ball.mode==='loose'||G.ball.mode==='pin')){
+    G.looseT+=dt;
+    if(G.looseT>=7.5){
+      G.ball.pts=0;emit('looseTimeout');
+      endPossession(1-G.off,.75);
+    }
+  }
   if(G.phase==='dead'){
     G.pt-=dt;
     if(G.pt<=0){
@@ -808,12 +816,12 @@ const PK=['x','z','y','vy','vx','vz','ax','az','fx','fz','ix','iz','mag','s','t'
 const BK=['mode','x','y','z','vx','vy','vz','make','pts','owner','tf','touched','q','safe','ride','by','pinT'];
 function snap(){
   const b=G.ball;
-  return{g:[G.t,G.phase,G.pt,G.off,G.next,G.holder?G.holder.id:-1,G.clock,G.needClear,G.score,G.slow,G.cele,G.celeT,G.finale,G.winner,G.camT,G.camP?G.camP.id:-1,G.rimKick,G.netKick,G.greenFlash,G.shake].map(n3),
+  return{g:[G.t,G.phase,G.pt,G.off,G.next,G.holder?G.holder.id:-1,G.clock,G.needClear,G.score,G.slow,G.cele,G.celeT,G.finale,G.winner,G.camT,G.camP?G.camP.id:-1,G.rimKick,G.netKick,G.greenFlash,G.shake,G.looseT].map(n3),
     b:BK.map(k=>n3(b[k])),p:G.p.map(p=>[PK.map(k=>n3(p[k])),p.cds,p.pend,p.spinS,p.dk])};
 }
 function restore(st){
   const g=st.g;[G.t,G.phase,G.pt,G.off,G.next]=g;G.holder=g[5]<0?null:G.p[g[5]];
-  G.clock=g[6];G.needClear=g[7];G.score=g[8];G.slow=g[9];G.cele=g[10];G.celeT=g[11];G.finale=g[12];G.winner=g[13];G.camT=g[14];G.camP=g[15]<0?null:G.p[g[15]];G.rimKick=g[16];G.netKick=g[17];G.greenFlash=g[18];G.shake=g[19];
+  G.clock=g[6];G.needClear=g[7];G.score=g[8];G.slow=g[9];G.cele=g[10];G.celeT=g[11];G.finale=g[12];G.winner=g[13];G.camT=g[14];G.camP=g[15]<0?null:G.p[g[15]];G.rimKick=g[16];G.netKick=g[17];G.greenFlash=g[18];G.shake=g[19];G.looseT=g[20]||0;
   BK.forEach((k,i)=>{G.ball[k]=st.b[i]});
   G.p.forEach((p,i)=>{const r=st.p[i];PK.forEach((k,j)=>{p[k]=r[0][j]});p.cds=r[1];p.pend=r[2];p.spinS=r[3];p.dk=r[4]});
 }
@@ -1354,6 +1362,7 @@ function drain(){
       case'shoeBack':flyShoes[d.p].g.visible=false;flyShoes[d.p].mark.visible=false;flyShoes[d.p].on=false;SFX.pop();if(me)banner('鞋子回來了','', 'small good');break;
       case'taunt':{const P2=G.p[d.p];if(P2.taunt==='dance')SFX.horn();else if(P2.taunt==='fold')SFX.tsk();else SFX.cheer();break}
       case'ult':banner(d.name,me?d.description:'對手放絕招',me?'you':'rival');SFX.ult();SFX.ooh();buzz(50);puff(G.p[d.p].x,.2,G.p[d.p].z,8,1.2);break;
+      case'looseTimeout':banner('爭球重開','球沒人撿到，換球權','small');SFX.buzz();break;
       case'clock':banner('12 秒到了','球權交換','small');SFX.buzz();break;
       case'bounce':SFX.bounce(clamp(d.v*.09,.2,1));break;
       case'rim':SFX.rim(clamp(d.v/4,.3,1));break;
