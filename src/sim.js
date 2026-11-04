@@ -77,10 +77,14 @@ const gain=(p,v)=>{p.en=clamp(p.en+v,0,100)};
 const ultOn=p=>G.t<p.ultT;
 function miss(p,by){
   if(ultOn(p)&&p.type==='wall'){return}
-  if(G.t-p.strikeT>2.1)p.strikes=0;
-  p.strikes++;p.strikeT=G.t;p.bal=p.strikes>=2?100:60;
-  if(p.strikes>=2){p.strikes=0;knock(p,by)}
-  else{setS(p,'stag',.5);gain(opp(p),18);emit('stag',{p:p.id})}
+  const pvp=G.online&&p.human,threshold=pvp?3:2;
+  // 雙人即時操作時不把相隔太近的晃動重複計為兩次失誤。
+  if(pvp&&G.t-p.strikeT<.35)return;
+  if(G.t-p.strikeT>(pvp?2.5:2.1))p.strikes=0;
+  p.strikes++;p.strikeT=G.t;
+  p.bal=threshold===3?(p.strikes===1?42:p.strikes===2?75:100):(p.strikes>=2?100:60);
+  if(p.strikes>=threshold){p.strikes=0;knock(p,by)}
+  else{setS(p,'stag',pvp?.32:.5);gain(opp(p),pvp?10:18);emit('stag',{p:p.id,remaining:threshold-p.strikes})}
 }
 function knock(p,by){
   setS(p,'fall',1.25);p.bal=100;p.pend=null;
@@ -97,7 +101,7 @@ function strike(a,D,k,easy=0){
   const d=opp(a);if(d.y>.05||d.s==='fall'||d.s==='getup')return;
   const gap=dist(a,d);if(gap>(d.human?2.6:3.4))return;
   const commit=Math.max(0,-(d.vx*D.x+d.vz*D.z));
-  d.pend={D,t:0,win:(d.human?REACT_H:REACT)+TP[d.type].react+easy+G.lat[d.id],commit,close:gap<1.8,k};
+  d.pend={D,t:0,win:(d.human?REACT_H+(G.online?.1:0):REACT)+TP[d.type].react+easy+G.lat[d.id],commit,close:gap<1.8,k};
   emit('juke',{to:d.id,D});
 }
 function moveKind(p){
@@ -156,14 +160,14 @@ function greenW(p){
 }
 // 空中壓迫：貼身起跳最強，擦肩掠過或距離較遠仍有微弱影響。
 function contestPenalty(p){
-  const o=opp(p),gap=dist(p,o);
-  const jumpAge=G.t-o.jumpT;
-  if(jumpAge<0||jumpAge>.95||o.y<.08||o.s==='fall'||o.s==='getup')return 0;
-  const handGap=hyp(p.x-(o.x+o.fx*.4),p.z-(o.z+o.fz*.4));
-  const facing=(p.x-o.x)*o.fx+(p.z-o.z)*o.fz;
-  let penalty=handGap<1.4&&gap<1.75&&facing>-.5?.2:
-              handGap<2.15&&gap<2.4?.11:
-              handGap<3.15?.04:0;
+  const o=opp(p),gap=dist(p,o),jumpAge=G.t-o.jumpT;
+  if(jumpAge<0||jumpAge>.95||o.y<.08||o.s==='fall'||o.s==='getup'||gap>4.7)return 0;
+  // 以防守者朝向為中心，左右各 60 度；背後或側後方起跳不構成干擾。
+  const dx=p.x-o.x,dz=p.z-o.z;
+  const face=gap>.001?(dx*o.fx+dz*o.fz)/gap:1;
+  if(face<.5)return 0;
+  const base=gap<1.6?.2:gap<2.5?.11:gap<3.5?.055:.025;
+  let penalty=base*(.75+.25*clamp((face-.5)/.5,0,1));
   if(ultOn(o)&&o.type==='wall')penalty=Math.min(.28,penalty*1.3);
   if(ultOn(p)&&p.type==='shoot')penalty*=.55;
   return penalty;
@@ -259,7 +263,7 @@ function actions(p){
         shooter.baitGiven=true;shooter.baitUntil=G.t+1.25;emit('bait',{p:shooter.id});
       }}
 }
-const DUNK_RESCUE_DURATION=.58,DUNK_RESCUE_CENTER=.68,DUNK_RESCUE_HALF=.075;
+const DUNK_RESCUE_DURATION=.39,DUNK_RESCUE_CENTER=.64,DUNK_RESCUE_HALF=.09;
 function finishDunk(p){
   const o=opp(p),d=p.dk,b=G.ball;
   d.done=true;b.x=HOOP.x;b.z=HOOP.z;b.y=RIMY-.05;b.vx=b.vz=0;b.vy=-7;
@@ -274,9 +278,10 @@ function resolveDunkRescue(p,success){
   if(success){
     d.rescued=true;d.rescueAt=G.t;p.hand=-p.hand;
     p.y=Math.max(p.y,.85);p.vx=p.vz=0;
-    G.slow=Math.max(G.slow,.5);
+    G.slow=Math.min(G.slow,.18);
     emit('pull',{p:p.id,rescue:true});
   }else{
+    G.slow=Math.min(G.slow,.18);
     swat(opp(p),p);setS(p,'rel');p.vy=0;
     emit('pullFail',{p:p.id});
   }
@@ -318,7 +323,7 @@ function dunkStep(p,dt){
       const q=ballPos(p);
       if(hyp(q.x-(o.x+o.fx*.25),q.y-(o.y+2.7),q.z-(o.z+o.fz*.25))<.78+TP[o.type].block){
         d.save=true;d.saveAt=G.t;p.vx=p.vz=0;
-        G.slow=Math.max(G.slow,2.8);
+        G.slow=Math.max(G.slow,1.5);
         emit('dunkRescue',{p:p.id});
         return;
       }
@@ -630,7 +635,7 @@ function restore(st){
   BK.forEach((k,i)=>{G.ball[k]=st.b[i]});
   G.p.forEach((p,i)=>{const r=st.p[i];PK.forEach((k,j)=>{p[k]=r[0][j]});p.cds=r[1];p.pend=r[2];p.spinS=r[3];p.dk=r[4]});
 }
-return{clamp,lerp,hyp,PI,rnd,gauss,pick,TP,CD,MV,LV,H,GR,BR,RIMY,HOOP,RIM,BOARDZ,W,D,ARC,CORNER,WIN,LAY,SHOT_MID,G,INP,step,advance,snap,restore,newGame,toCheck,knock,setS,startShot,ballPos,opp,dH,isThree,toHoop,dist,speed,DOWN,canDunk,moveKind,spinReady,ultOn,greenW,contestPenalty};
+return{clamp,lerp,hyp,PI,rnd,gauss,pick,TP,CD,MV,LV,H,GR,BR,RIMY,HOOP,RIM,BOARDZ,W,D,ARC,CORNER,WIN,LAY,SHOT_MID,G,INP,step,advance,snap,restore,newGame,toCheck,knock,setS,startShot,ballPos,opp,dH,isThree,toHoop,dist,speed,DOWN,canDunk,moveKind,spinReady,ultOn,greenW,contestPenalty,DUNK_RESCUE_DURATION,DUNK_RESCUE_CENTER,DUNK_RESCUE_HALF};
 }
 
 export { createSim };
