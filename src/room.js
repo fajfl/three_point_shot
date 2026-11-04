@@ -3,6 +3,8 @@ import { createSim } from './sim.js';
 
 const TICK_MS = 16;
 const SNAP_S = 0.05;
+const clampNumber = (v, min, max) => Number.isFinite(v) ? Math.max(min, Math.min(max, v)) : 0;
+const playerType = v => v === 'shoot' || v === 'slash' || v === 'wall' ? v : 'slash';
 
 export class Room {
   constructor() {
@@ -22,17 +24,24 @@ export class Room {
     if (m.t === 'j') return this.join(sock, m);
     const seat = this.seats.find(s => s && s.sock === sock);
     if (!seat) return;
-    if (m.t === 'r') { seat.type = m.y; seat.ready = true; return this.maybeStart(); }
+    if (m.t === 'r') { seat.type = playerType(m.y); seat.ready = true; return this.maybeStart(); }
     if (m.t === 'p') {
       sock.send(JSON.stringify({ t: 'q', c: m.c }));
-      if (this.sim && typeof m.r === 'number') this.sim.G.lat[seat.i] = Math.min(0.2, m.r / 1000 + 0.04);
+      if (this.sim && Number.isFinite(m.r)) this.sim.G.lat[seat.i] = clampNumber(m.r / 1000 + 0.04, 0, 0.2);
       return;
     }
     if (m.t === 'i' && this.sim) {
       const I = this.sim.INP[seat.i];
-      I.x = m.x; I.z = m.z; I.mag = m.m; I.a = !!m.a; I.b = !!m.b; I.c = !!m.c;
-      if (m.ta) I.tapA = true; if (m.tb) I.tapB = true; if (m.tc) I.tapC = true;
-      seat.ack = m.s;
+      I.x = clampNumber(m.x, -1, 1);
+      I.z = clampNumber(m.z, -1, 1);
+      const length = Math.hypot(I.x, I.z);
+      if (length > 1) { I.x /= length; I.z /= length; }
+      I.mag = clampNumber(m.m, 0, 1);
+      I.a = m.a === true; I.b = m.b === true; I.c = m.c === true;
+      if (m.ta === true) I.tapA = true;
+      if (m.tb === true) I.tapB = true;
+      if (m.tc === true) I.tapC = true;
+      if (Number.isSafeInteger(m.s) && m.s >= 0) seat.ack = m.s;
     }
   }
   join(sock, m) {
@@ -40,7 +49,7 @@ export class Room {
     if (i < 0) i = this.seats.findIndex(s => !s);
     if (i < 0) { sock.send(JSON.stringify({ t: 'full' })); return; }
     const old = this.seats[i];
-    this.seats[i] = old ? Object.assign(old, { sock }) : { i, k: m.k, sock, type: m.y, ready: false, ack: 0 };
+    this.seats[i] = old ? Object.assign(old, { sock }) : { i, k: m.k, sock, type: playerType(m.y), ready: false, ack: 0 };
     sock.send(JSON.stringify({ t: 'seat', seat: i }));
     this.lobby();
     if (this.timer) {
