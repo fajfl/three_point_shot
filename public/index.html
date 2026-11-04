@@ -1358,7 +1358,7 @@ if(window.__ONLINE){
   }else{
     const h=$('#host');h.hidden=false;$('#go').textContent='打電腦';
     h.addEventListener('click',()=>{
-      audio();startAmb();Net.on=true;Net.room=Array.from({length:4},()=>ALPHA[Math.floor(Math.random()*ALPHA.length)]).join('');
+      audio();Net.on=true;Net.room=Array.from({length:4},()=>ALPHA[Math.floor(Math.random()*ALPHA.length)]).join('');
       Net.ready=true;drawQR();lobby.hidden=false;say('等朋友掃碼加入');connect();
     });
   }
