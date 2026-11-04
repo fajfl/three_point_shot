@@ -151,7 +151,7 @@ body{font-family:var(--tc);-webkit-user-select:none;user-select:none;-webkit-tou
         </fieldset>
         <button id="host" type="button" hidden>開房跟朋友打</button>
         <button id="go" type="button">開打</button>
-        <p class="how"><b>招式鍵</b>配搖桿：左右變向、往後後撤、往前突破，貼近對手時變成背後運球和轉身，按鈕會顯示現在的招式。先晃再突破更快。<b>投籃</b>長按到綠區放開，側跑騎馬射箭，搖桿往後是後仰，連點兩下假投。上籃推左右是歐洲步，快被蓋時再按一次拉桿。</p>
+        <p class="how"><b>招式鍵</b>配搖桿：左右變向、往後後撤、往前突破，貼近對手時變成背後運球和轉身，按鈕會顯示現在的招式。先晃再突破更快。<b>投籃</b>長按到綠區放開，側跑騎馬射箭，搖桿往後是後仰，連點兩下假投。近框一律灌籃，被蓋前會慢動作出現極窄綠條，按「拉桿！」可以改成反手灌籃。後撤步接三分綠條較大，假投騙跳後或對手抄空後立刻突破更快。火鍋把球打向空地，雙方要追球。</p>
       </div>
     </section>
     <section id="lobby" hidden aria-label="等待朋友">
@@ -1099,7 +1099,7 @@ function updBody(B,p,dt,dtR){
   B.mix.update(dt);
   const pel=B.by.pelvis;if(B.air)pel.position.z=Math.min(pel.position.z,.9);else if(p.s!=='fall'&&p.s!=='getup')pel.position.z=Math.min(pel.position.z,.95);
   // 位置與慣性傾斜：加速往前倒，急煞時上身明顯往後甩
-  B.root.position.set(p.x+(p.ex||0),p.y,p.z+(p.ez||0));B.root.rotation.y=Math.atan2(p.fx,p.fz)-(p.s==='spin'?clamp(p.t/.36,0,1)*PI*2*p.spinDir:0);
+  B.root.position.set(p.x+(p.ex||0),p.y,p.z+(p.ez||0));B.root.rotation.y=Math.atan2(p.fx,p.fz)-(p.s==='spin'?clamp(p.t/.48,0,1)*PI*2*p.spinDir:0);
   const rx=-p.fz,rz=p.fx,af=p.ax*p.fx+p.az*p.fz,ar=p.ax*rx+p.az*rz,gr=p.y<.05&&p.s!=='fall'&&p.s!=='getup',k=1-Math.exp(-14*dt);
   B.lean.x+=((gr?clamp(af*.024,-.34,.34):0)+(p.s==='step'?-.18:0)+(p.s==='burst'?.2:0)+(p.fade&&(p.s==='hold'||p.s==='rel')&&p.y>.02?-.42:0)-B.lean.x)*k;
   B.lean.z+=((gr?clamp(ar*.028,-.4,.4):0)-B.lean.z)*k;
@@ -1218,9 +1218,14 @@ function drain(){
       }
       case'bump':if(me)banner('卡住了','', 'small good');SFX.thud(.3);break;
       case'steal':banner(me?'抄走了':'球被抄了','', 'small '+(me?'good':'rival'));SFX.hit();buzz(30);break;
-      case'whiff':if(me)banner('抄空了','', 'small');break;
+      case'whiff':if(me)banner('抄空了','容易被反打','small');break;
+      case'whiffWindow':if(me)hint('whiff','對手抄空了！趁現在按招式突破。',3);break;
+      case'whiffDrive':if(me)banner('抓到破綻','抄空後的突破','small good');break;
+      case'bait':if(me)banner('假投騙跳！','趁他在空中突破','small good');break;
+      case'baitDrive':if(me)banner('騙跳突破','抓到落地空檔','small good');break;
+      case'chase':if(me)banner('火鍋反擊！',d.clear?'先帶出三分線再攻':'追球成功，趁勢進攻','small good');break;
       case'dunkRescue':if(me){banner('還能救！','小綠條內再按一次「拉桿」','small you');SFX.pop();buzz(35)}break;
-      case'pullFail':if(me)banner('拉桿失敗','球被蓋走了','small rival');break;
+      case'pullFail':if(me)banner(d.miss?'極限灌籃失手':'拉桿失敗',d.miss?'球彈出來了':'球被蓋走了','small rival');break;
       case'block':banner(me?'蓋掉了!':'被蓋了','', 'small '+(me?'good':'rival'));SFX.hit();buzz(50);break;
       case'smack':SFX.ooh();puff(G.ball.x,.15,G.ball.z,3,.7);break;
       case'fake':SFX.thud(.04);break;
@@ -1229,7 +1234,7 @@ function drain(){
         if(me&&d.q!=='lay'){
           meterEl.classList.toggle('hit',d.q==='green');
           setTimeout(()=>{meterEl.classList.remove('on','hit')},300);
-          if(d.q==='green'){SFX.good();banner(d.contested?'綠條受干擾':'完美出手',d.contested?'防守貼臉跳起來了':'', 'small good');buzz(20)}
+          if(d.q==='green'){SFX.good();banner(d.contested?'綠條受干擾':'完美出手',d.contested?'防守起跳，出手有壓力':'', 'small good');buzz(20)}
           else if(d.q==='ok')banner(d.early?'有點早':'有點晚','', 'small');
           else banner(d.early?'太早了':'太晚了','', 'small');
         }break;
@@ -1246,7 +1251,7 @@ function drain(){
       case'behind':if(me)banner('背後運球','', 'small you');break;
       case'pull':if(me)banner(d.rescue?'極限拉桿！':'拉桿',d.rescue?'閃過封蓋，再拼命中':'', 'small you');SFX.squeak(.07);break;
       case'combo':if(me)banner('連招突破','', 'small you');break;
-      case'stepShot':if(me)banner('後撤跳投','', 'small you');break;
+      case'stepShot':if(me)banner(d.three?'後撤三分！':'後撤跳投',d.three?'綠條略加寬，但仍會被干擾':'', 'small you');break;
       case'shoeBack':flyShoes[d.p].g.visible=false;flyShoes[d.p].mark.visible=false;flyShoes[d.p].on=false;SFX.pop();if(me)banner('鞋子回來了','', 'small good');break;
       case'taunt':{const P2=G.p[d.p];if(P2.taunt==='dance')SFX.horn();else if(P2.taunt==='fold')SFX.tsk();else SFX.cheer();break}
       case'ult':banner(d.name,me?'絕招發動':'對手放絕招',me?'you':'rival');SFX.ult();SFX.ooh();buzz(50);puff(G.p[d.p].x,.2,G.p[d.p].z,8,1.2);break;
