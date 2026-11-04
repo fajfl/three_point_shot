@@ -1219,6 +1219,8 @@ function drain(){
       case'bump':if(me)banner('卡住了','', 'small good');SFX.thud(.3);break;
       case'steal':banner(me?'抄走了':'球被抄了','', 'small '+(me?'good':'rival'));SFX.hit();buzz(30);break;
       case'whiff':if(me)banner('抄空了','', 'small');break;
+      case'dunkRescue':if(me){banner('還能救！','小綠條內再按一次「拉桿」','small you');SFX.pop();buzz(35)}break;
+      case'pullFail':if(me)banner('拉桿失敗','球被蓋走了','small rival');break;
       case'block':banner(me?'蓋掉了!':'被蓋了','', 'small '+(me?'good':'rival'));SFX.hit();buzz(50);break;
       case'smack':SFX.ooh();puff(G.ball.x,.15,G.ball.z,3,.7);break;
       case'fake':SFX.thud(.04);break;
@@ -1227,7 +1229,7 @@ function drain(){
         if(me&&d.q!=='lay'){
           meterEl.classList.toggle('hit',d.q==='green');
           setTimeout(()=>{meterEl.classList.remove('on','hit')},300);
-          if(d.q==='green'){SFX.good();banner('完美出手','', 'small good');buzz(20)}
+          if(d.q==='green'){SFX.good();banner(d.contested?'綠條受干擾':'完美出手',d.contested?'防守貼臉跳起來了':'', 'small good');buzz(20)}
           else if(d.q==='ok')banner(d.early?'有點早':'有點晚','', 'small');
           else banner(d.early?'太早了':'太晚了','', 'small');
         }break;
@@ -1242,7 +1244,7 @@ function drain(){
       case'euro':if(me)banner('歐洲步','', 'small you');break;
       case'spin':if(me)banner('轉身過人','', 'small you');break;
       case'behind':if(me)banner('背後運球','', 'small you');break;
-      case'pull':if(me)banner('拉桿','一半機率','small you');SFX.squeak(.07);break;
+      case'pull':if(me)banner(d.rescue?'極限拉桿！':'拉桿',d.rescue?'閃過封蓋，再拼命中':'', 'small you');SFX.squeak(.07);break;
       case'combo':if(me)banner('連招突破','', 'small you');break;
       case'stepShot':if(me)banner('後撤跳投','', 'small you');break;
       case'shoeBack':flyShoes[d.p].g.visible=false;flyShoes[d.p].mark.visible=false;flyShoes[d.p].on=false;SFX.pop();if(me)banner('鞋子回來了','', 'small good');break;
@@ -1485,7 +1487,8 @@ function view(dtR,dtS){
       setBtn(btnA,MV[mv],cdv>0||me.cd>0);btnA.style.setProperty('--cd',cdv.toFixed(2));
       const lay2=me.s==='layup'&&!me.relDone,near=(dH(me)<LAY||(ultOn(me)&&me.type==='slash'&&canDunk(me)))&&!G.needClear;
       const fv=toHoop(me),sl2=Inp.mag>.3?Inp.x*(-fv.z)+Inp.z*fv.x:0,bk=Inp.mag>.3&&(Inp.x*fv.x+Inp.z*fv.z)<-.5;
-      setBtn(btnB,lay2?(me.pull?'':'拉桿'):G.needClear?'帶出去':near?(canDunk(me)?'灌籃':(Math.abs(sl2)>.55&&dH(me)>1.7?'歐洲步':'上籃')):(bk?'後仰':'投籃'),G.needClear);btnB.classList.toggle('hot',near||lay2);
+      const saving=me.s==='dunk'&&me.dk?.save;
+      setBtn(btnB,saving?'拉桿！':lay2?(me.pull?'':'拉桿'):G.needClear?'帶出去':near?'灌籃':(bk?'後仰':'投籃'),G.needClear&&!saving);btnB.classList.toggle('hot',saving||near||lay2);
     }else if(mode==='def'){setBtn(btnA,'抄球',me.s!=='free');setBtn(btnB,'封蓋',me.s!=='free');btnB.classList.remove('hot')}
     else{setBtn(btnA,'',true);setBtn(btnB,'跳',me.s!=='free');btnB.classList.remove('hot')}
     const myTaunt=G.phase==='dead'&&G.cele===G.me&&!me.taunt&&me.s==='free'&&me.y===0;
@@ -1493,13 +1496,16 @@ function view(dtR,dtS){
     btnA.style.visibility=(mode==='loose'&&!myTaunt)?'hidden':'';
     if(mode!=='atk'&&!myTaunt)btnA.style.setProperty('--cd','0');
     const C=$('#btnC'),ready=me.en>=100;setBtn(C,ready?TP[me.type].ult:'絕招',false);C.classList.toggle('hot',ready);C.style.setProperty('--cd',(1-me.en/100).toFixed(2));
-    if(me.s==='hold'){
+    const saving=me.s==='dunk'&&me.dk?.save;
+    if(me.s==='hold'||saving){
       tmp.set(me.x,me.y+2.05,me.z).project(cam);
       const mx=(tmp.x*.5+.5)*pw+44,my=(-tmp.y*.5+.5)*ph-56;
       meterEl.style.transform=`translate(${clamp(mx,4,pw-24)}px,${clamp(my,70,ph-130)}px)`;
-      meterEl.classList.add('on');const w=greenW(me);
-      mGreen.style.bottom=(SHOT_MID-w)*100+'%';mGreen.style.height=w*200+'%';mFill.style.height=clamp(me.meter,0,1)*100+'%';
-    }
+      meterEl.classList.add('on');
+      const mid=saving?.68:SHOT_MID,w=saving?.075:greenW(me);
+      const fill=saving?clamp((G.t-me.dk.saveAt)/.58,0,1):clamp(me.meter,0,1);
+      mGreen.style.bottom=(mid-w)*100+'%';mGreen.style.height=w*200+'%';mFill.style.height=fill*100+'%';
+    }else if(!meterEl.classList.contains('hit'))meterEl.classList.remove('on');
   }
   R.render(scene,cam);
 }
