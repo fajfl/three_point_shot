@@ -53,7 +53,7 @@ function ballPos(p){
 function newGame(attract,level){
   G.finale=false;G.attract=attract;G.level=level||G.level;
   const ty=Object.keys(TP);G.p[0].type=attract?pick(ty):G.myType;G.p[1].type=G.foeType||pick(ty);
-  for(const p of G.p){p.en=0;p.ultT=0;p.cds={};p.last='';p.strikes=0;p.shoeLost=false;p.taunt='';p.pull=false;p.ride=false}emit('types');G.score=[0,0];G.stats={ankle:[0,0],green:0};G.fx.length=0;G.slow=0;G.camT=0;
+  for(const p of G.p){p.en=0;p.ultT=0;p.cds={};p.last='';p.strikes=0;p.shoeLost=false;p.taunt='';p.pull=false;p.ride=false;p.dk=null}emit('types');G.score=[0,0];G.stats={ankle:[0,0],green:0};G.fx.length=0;G.slow=0;G.camT=0;
   G.p[0].human=!attract;G.p[1].human=G.online;
   toCheck(attract||G.online?(Math.random()<.5?0:1):0);
 }
@@ -61,7 +61,7 @@ function toCheck(off){
   G.off=off;G.phase='check';G.pt=0;G.needClear=false;G.clock=12;
   const a=G.p[off],d=G.p[1-off],b=G.ball;
   G.holder=a;b.mode='held';b.pts=0;b.make=false;b.touched=false;
-  for(const p of G.p){setS(p,'free');p.pend=null;p.bal=0;p.vy=0;p.y=0;p.cd=0;p.taunt='';p.pull=false;p.ride=false;p.fade=false;p.stepShot=false;p.strikes=0;p.ax=p.az=0;p.aiG=null;p.aiB=null;p.aiF=false}
+  for(const p of G.p){setS(p,'free');p.pend=null;p.bal=0;p.vy=0;p.y=0;p.cd=0;p.taunt='';p.pull=false;p.ride=false;p.fade=false;p.stepShot=false;p.strikes=0;p.ax=p.az=0;p.aiG=null;p.aiB=null;p.aiF=false;p.dk=null}
   const x=rnd(-1.5,1.5);a.tx=x;a.tz=9.2;d.tx=x*.85;d.tz=7;
   emit('check',{off});
 }
@@ -147,20 +147,15 @@ function greenW(p){
   return w;
 }
 function canDunk(p){
-  const d=dH(p);if(ultOn(p)&&p.type==='slash')return d>.9&&d<5.6;
-  if(d>3.4+TP[p.type].lay||d<.9||!(speed(p)>3.4||p.s==='burst'))return false;
-  const o=opp(p),f=toHoop(p),ox=o.x-p.x,oz=o.z-p.z,ahead=ox*f.x+oz*f.z,side=Math.abs(ox*f.z-oz*f.x);
-  return DOWN.has(o.s)||!(ahead>0&&ahead<2.2&&side<.8);
+  const d=dH(p);
+  return d<LAY||(ultOn(p)&&p.type==='slash'&&d<5.6);
 }
 function startShot(p){
   if(G.needClear){emit('needClear',{p:p.id});return}
-  if(dH(p)<LAY||(ultOn(p)&&p.type==='slash'&&canDunk(p))){
-    if(canDunk(p)){setS(p,'dunk');p.dk={x0:p.x,z0:p.z,done:false,flew:false};p.vx*=.8;p.vz*=.8}
-    else{
-      const f=toHoop(p),d=dH(p),v=Math.max(speed(p),d>1.5?5.4:2),sl=p.mag>.3?p.ix*(-f.z)+p.iz*f.x:0;
-      if(Math.abs(sl)>.55&&d>1.7){setS(p,'euro');p.euS=Math.sign(sl);p.euHit=false;p.pull=false;emit('euro',{p:p.id});emit('dust',{p:p.id,n:3});return}
-      setS(p,'layup');p.vx=f.x*v;p.vz=f.z*v;p.vy=5;p.y=.01;p.relDone=false;p.pull=false;emit('dust',{p:p.id,n:3});
-    }
+  if(canDunk(p)){
+    setS(p,'dunk');
+    p.dk={x0:p.x,z0:p.z,done:false,flew:false,save:false,rescued:false};
+    p.vx*=.8;p.vz*=.8;
     return;
   }
   if(G.t-p.tapT<.3){doFake(p);return}
@@ -186,9 +181,12 @@ function release(p){
   const err=Math.abs(p.meter-SHOT_MID),w=greenW(p);
   const q=err<=w?'green':err<=w*2.4?'ok':'bad';
   if(!p.jumped){p.vy=3.2;p.jumped=true}
-  const make=q==='green'?true:Math.random()<(q==='ok'?.65:.15);
+  const o=opp(p),gap=dist(p,o);
+  const facing=(p.x-o.x)*o.fx+(p.z-o.z)*o.fz;
+  const contested=o.s==='jump'&&o.y>.22&&gap<1.8&&facing>-.35;
+  const make=Math.random()<(q==='green'?(contested?.84:1):(q==='ok'?.65:.15)*(contested?.8:1));
   if(q==='green'){G.greenFlash=1;gain(p,15);if(p.human)G.stats.green++}
-  emit('release',{p:p.id,q,err,early:p.meter<SHOT_MID});
+  emit('release',{p:p.id,q,err,early:p.meter<SHOT_MID,contested});
   setS(p,'rel');
   launch(p,make,isThree(p)?3:2,q);
 }
@@ -197,7 +195,8 @@ function strikeSteal(p){
   if(!h||h===p||!STEALABLE.has(h.s)){p.dur=.6;return}
   const q=ballPos(h),d=hyp(q.x-(p.x+p.fx*.95),q.z-(p.z+p.fz*.95));
   const ultW=ultOn(p)&&p.type==='wall';
-  if(d<.54+TP[p.type].steal+(ultW?.3:0)){
+  const stealChance=ultW?.72:(p.type==='wall'?.57:.47);
+  if(d<.54+TP[p.type].steal+(ultW?.3:0)&&Math.random()<stealChance){
     const b=G.ball;b.x=q.x;b.y=q.y;b.z=q.z;b.mode='loose';b.make=false;b.pts=0;b.touched=true;b.tf=0;
     b.vx=(p.x-h.x)*.7+rnd(-.5,.5);b.vz=(p.z-h.z)*.7+rnd(-.5,.5);b.vy=2.6;G.holder=null;h.noPick=G.t+.32;setS(h,'stag',.22);
     gain(p,25);emit('steal',{p:p.id});
@@ -211,6 +210,11 @@ function actions(p){
   if(G.phase!=='play')return;
   const o=opp(p);
   if(pC&&p.s!=='fall'&&p.s!=='getup')doUlt(p);
+  if(p===G.holder&&p.s==='dunk'&&p.dk?.save&&pB){
+    const u=(G.t-p.dk.saveAt)/DUNK_RESCUE_DURATION;
+    resolveDunkRescue(p,Math.abs(u-DUNK_RESCUE_CENTER)<=DUNK_RESCUE_HALF);
+    return;
+  }
   if(p===G.holder&&p.s==='layup'&&pB&&!p.pull&&!p.relDone){p.pull=true;emit('pull',{p:p.id})}
   if(p===G.holder){
     if(rB&&p.s==='hold'){
@@ -223,8 +227,29 @@ function actions(p){
     if(pB&&p.s==='free'&&p.y===0){setS(p,'jump');p.vy=5.5;p.y=.01}
   }else if(pB&&p.s==='free'&&p.y===0){setS(p,'jump');p.vy=5.5;p.y=.01}
 }
+const DUNK_RESCUE_DURATION=.58,DUNK_RESCUE_CENTER=.68,DUNK_RESCUE_HALF=.075;
+function resolveDunkRescue(p,success){
+  const d=p.dk;if(!d?.save)return;
+  d.save=false;
+  if(success){
+    d.rescued=true;p.pull=true;p.relDone=false;p.hand=-p.hand;
+    setS(p,'layup');p.y=Math.max(p.y,.7);p.vy=4.2;
+    G.slow=Math.max(G.slow,.55);
+    emit('pull',{p:p.id,rescue:true});
+  }else{
+    swat(opp(p),p);setS(p,'rel');p.vy=0;
+    emit('pullFail',{p:p.id});
+  }
+}
 function dunkStep(p,dt){
   const T1=.15,d=p.dk,o=opp(p),T2=T1+.3+(d.len||0)*.04;
+  if(d.save){
+    const u=(G.t-d.saveAt)/DUNK_RESCUE_DURATION;
+    if(!p.human&&u>=DUNK_RESCUE_CENTER){
+      resolveDunkRescue(p,Math.random()<.22+LV[G.level].pull*.28);
+    }else if(u>=1)resolveDunkRescue(p,false);
+    return;
+  }
   if(p.t<T1){p.x+=p.vx*dt;p.z+=p.vz*dt;return}
   if(!d.flew){d.flew=true;d.x0=p.x;d.z0=p.z;d.len=dH(p);p.vx=p.vz=0;emit('dust',{p:p.id,n:5});return}
   if(p.t<T2){
@@ -232,7 +257,12 @@ function dunkStep(p,dt){
     p.x=lerp(d.x0,tx,e);p.z=lerp(d.z0,tz,e);p.y=1.0*Math.sin(u*PI/2);
     if(u>.2&&o.y>.3&&!(ultOn(p)&&p.type==='slash')){
       const q=ballPos(p);
-      if(hyp(q.x-(o.x+o.fx*.25),q.y-(o.y+2.7),q.z-(o.z+o.fz*.25))<.78){swat(o,p);setS(p,'rel');p.vy=0;return}
+      if(hyp(q.x-(o.x+o.fx*.25),q.y-(o.y+2.7),q.z-(o.z+o.fz*.25))<.78+TP[o.type].block){
+        d.save=true;d.saveAt=G.t;p.vx=p.vz=0;
+        G.slow=Math.max(G.slow,2.8);
+        emit('dunkRescue',{p:p.id});
+        return;
+      }
     }
   }else if(!d.done){
     d.done=true;const b=G.ball;b.x=HOOP.x;b.z=HOOP.z;b.y=RIMY-.05;b.vx=b.vz=0;b.vy=-7;b.mode='loose';b.make=false;b.touched=true;b.owner=p.id;G.holder=null;
@@ -289,7 +319,7 @@ function upd(p,dt){
       if(!p.relDone&&p.t>(p.pull?.5:.38)){
         p.relDone=true;const o=opp(p),g=dist(p,o);let pr=.96;
         if(!DOWN.has(o.s)&&g<1.25)pr=.72;if(o.y>.3&&g<1.6)pr=.55;
-        if(p.pull)pr=.5;
+        if(p.dk?.rescued)pr=.83;else if(p.pull)pr=.5;
         const mk=Math.random()<pr;emit('release',{p:p.id,q:'lay'});
         launch(p,mk,2,'lay',.5);
       }break;
@@ -480,7 +510,7 @@ function aiDef(p,o,L,dt){
   if(o.s==='hold'&&gap<2.8){if(!p.aiB)p.aiB={at:rnd(.25,.5)};if(o.t>=p.aiB.at)p.b=true}
   else if(o.s==='fake'&&gap<2.8&&!p.aiF){p.aiF=true;if(Math.random()<L.bite){p.b=true;if(o.human)emit('bit',{p:o.id})}}
   else if((o.s==='layup'||o.s==='dunk')&&gap<2.2&&!p.aiB){p.aiB={at:0};p.b=Math.random()<L.block}
-  if(gap<1.7&&p.aiCd<=0&&Math.random()<L.steal*dt*2.4){p.a=true;p.aiCd=1.3}
+  if(gap<1.7&&p.aiCd<=0&&Math.random()<L.steal*dt*1.4){p.a=true;p.aiCd=1.3}
 }
 function aiLoose(p,o,L){
   p.c=false;const b=G.ball;steerTo(p,b.x+b.vx*.25,b.z+b.vz*.25,.5);p.b=false;
