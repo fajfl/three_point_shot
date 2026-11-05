@@ -118,7 +118,14 @@ body{font-family:var(--tc);-webkit-user-select:none;user-select:none;-webkit-tou
 #recap b{color:var(--you);font-weight:900}
 #result:not([hidden])~.how,.foot.ladder .how{display:none}
 .foot.ladder #host,.foot.ladder #joinBox{display:none!important}
-#modes{display:grid;grid-template-columns:2fr 1fr;gap:8px}
+#modes{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px}
+#tutBtn,#careerBtn{min-width:0}
+#tutBtn.new{background:var(--you)!important;color:var(--night)!important}
+#tut{position:absolute;top:calc(env(safe-area-inset-top,0px) + 62px);left:max(16px,env(safe-area-inset-left,0px));right:60px;padding:8px 10px;background:rgba(10,17,56,.9);border-left:4px solid var(--you);border-radius:3px}
+#tut b{display:block;font:900 15px/1.2 var(--tc);color:var(--you)}
+#tut p{margin:3px 0 6px;font-size:14px;font-weight:700;line-height:1.4}
+#tutSkip{pointer-events:auto;min-height:32px;padding:0 10px;border:1px solid var(--chalk);border-radius:3px;background:transparent;color:var(--chalk);font:700 12px/1 var(--tc)}
+#tutBtn{border-color:var(--chalk)!important;color:var(--chalk)!important}
 #modes button{min-height:48px;padding:4px 6px;border:2px solid var(--you);border-radius:4px;background:rgba(10,17,56,.82);color:var(--you);font:900 16px/1.15 var(--tc)}
 #modes small{display:block;font:500 11px/1.2 var(--tc);color:var(--chalk)}
 #careerBtn{border-color:var(--chalk)!important;color:var(--chalk)!important}
@@ -176,6 +183,7 @@ body{font-family:var(--tc);-webkit-user-select:none;user-select:none;-webkit-tou
         <button class="pad" id="btnA" type="button">變向</button>
         <button class="pad" id="btnB" type="button">投籃</button>
       </div>
+      <div id="tut" hidden><b id="tutT"></b><p id="tutD"></p><button id="tutSkip" type="button">離開教學</button></div>
       <div id="meter"><i id="mGreen"></i><i id="mFill"></i></div>
       <div id="contestInfo" hidden aria-live="off"></div>
       <div id="banner"><strong></strong><span></span></div>
@@ -207,7 +215,7 @@ body{font-family:var(--tc);-webkit-user-select:none;user-select:none;-webkit-tou
           <div id="joinRow"><input id="roomCode" type="text" inputmode="text" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="例如 AB3K" aria-label="4 至 8 碼房間代碼"><button id="joinRoom" type="button">加入</button></div>
           <p id="joinError" role="status" hidden></p>
         </div>
-        <div id="modes"><button id="ladder" type="button">河濱擂台</button><button id="careerBtn" type="button">生涯</button></div>
+        <div id="modes"><button id="ladder" type="button">河濱擂台</button><button id="tutBtn" type="button">教學</button><button id="careerBtn" type="button">生涯</button></div>
         <button id="go" type="button">開打</button>
         <p class="how"><b>招式鍵</b>配搖桿：左右變向、往後後撤、往前突破，貼近對手時變成背後運球和轉身，按鈕會顯示現在的招式。先晃再突破更快。<b>操作</b>右下投籃／封蓋、右中運球招式／抄球、右上絕招。<b>投籃</b>長按到綠區放開，側跑騎馬射箭，搖桿往後是後仰，連點兩下假投。近框一律灌籃，被蓋前約 0.7 秒慢動作出現小綠條，按「拉桿！」可以改成反手灌籃。後撤步接三分可先按住投籃，踩到三分線立即出手，綠條較大；假投騙跳後或對手抄空後立刻突破更快。斷踝失誤每次換球權歸零。火鍋把球打向空地，雙方要追球。</p>
       </div>
@@ -1432,6 +1440,52 @@ const Save=(()=>{let s=null;try{s=JSON.parse(localStorage.getItem('dh-save-v1'))
 const store=()=>{try{localStorage.setItem('dh-save-v1',JSON.stringify(Save))}catch(e){}};
 const rollDay=()=>{const d=today();if(Save.day!==d){Save.day=d;Save.dc={};Save.dd=[]}};
 
+/* 新手教學：同一套規則，對手放水，每步完成才往下。 */
+const TUT=[
+  {t:'跑起來',d:'拖左邊搖桿，跑到籃框附近。有慣性，轉向要提早。',ok:(p)=>dH(p)<5.2},
+  {t:'變向',d:'推搖桿往左或右，同時按「招式」鍵。對手連續跟不上就會斷踝。',ok:(p,s)=>p.moveT>s&&['cross','behind','spin'].includes(p.last)},
+  {t:'灌籃',d:'衝進籃下按投籃，把球灌進去。',ev:(k,d,me)=>k==='score'&&me},
+  {t:'時機投籃',d:'長按投籃，白條走到綠區時放開。',ev(k,d,me){if(k==='release'&&me&&d.q!=='lay'){this.n=(this.n||0)+1;return d.q==='green'||this.n>=3}}},
+  {t:'假投',d:'快點兩下投籃。對手起跳後，馬上按招式突破。',ev:(k,d,me)=>k==='fake'&&me},
+  {t:'後撤步',d:'往遠離籃框的方向推搖桿，再按招式鍵。接著按住投籃可以直接出手。',ok:(p,s)=>p.moveT>s&&p.last==='step'},
+  {t:'防守',d:'換你防守。對手出手時按封蓋，貼近時按抄球。',foe:true,ev:(k,d,me)=>(me&&(k==='block'||k==='steal'||k==='read'))||(!me&&k==='score')||k==='clock'||k==='looseTimeout',ok:(p)=>G.holder===p},
+  {t:'絕招',d:'能量滿了，按右上的絕招。',ult:true,ev:(k,d,me)=>k==='ult'&&me}
+];
+LV.tut={name:'陪練學弟',pull:0,react:.5,read:.1,aim:.18,move:0,steal:0,bite:1,block:0};
+const Tut={on:false,i:0,s:0,off:0,pick:'reg',
+  start(){
+    this.on=true;this.pick=G.level;this.i=-1;Foe.kit=null;
+    Inp.x=Inp.z=Inp.mag=0;Inp.a=Inp.b=false;startAmb();showHud('學弟');
+    newGame(false,'tut');dressUp();Object.assign(G.hintN,{atk:9,def:9,foe:9,shoe:9});
+    $('#tut').hidden=false;this.next();
+  },
+  next(){
+    this.i++;
+    if(this.i>=TUT.length){this.stop(true);return}
+    const q=TUT[this.i],p=G.p[G.me];q.n=0;this.s=G.t;this.off=q.foe?1-G.me:G.me;
+    $('#tutT').textContent=`${this.i+1} / ${TUT.length}  ${q.t}`;$('#tutD').textContent=q.d;
+    if(q.ult)p.en=100;
+    if(q.foe||q.ult||this.i===3){this.wait=.5;toCheck(this.off)}
+    if(this.i>0)banner('做到了','', 'small good');
+  },
+  tick(){
+    if(!this.on)return;
+    const q=TUT[this.i],p=G.p[G.me];
+    G.score=[0,0];G.next=this.off;$('#s0').textContent='0';$('#s1').textContent='0';
+    if(!q.foe)G.clock=12;
+    if(q.ok&&G.phase==='play'&&G.t-this.s>.6&&q.ok(p,this.s))this.next();
+  },
+  ev(k,d){
+    if(!this.on)return;
+    const q=TUT[this.i];
+    if(q.ev&&G.t-this.s>.2&&q.ev.call(q,k,d,d.p===G.me))this.next();
+  },
+  stop(done){
+    this.on=false;G.level=this.pick;$('#tut').hidden=true;
+    if(done){const first=!Save.tut;if(first){Save.tut=1;Save.xp+=100}store();const el=$('#recap');el.innerHTML='<b>教學完成</b>'+(first?' +100 經驗':'')+'，去河濱擂台試試吧';el.hidden=false}
+    hud.dataset.off='1';menu.hidden=false;newGame(true);dressUp();Career.paint();
+  }
+};
 /* 擂台八關。傳說關用對手打法重現球星的招牌，血量與規則不變。 */
 const K=(jersey,trim,number,skin,hair,num,scale)=>({jersey,shorts:jersey,trim,number,skin,hair,num,scale});
 const STAGES=[
@@ -1480,6 +1534,8 @@ const Career={M:{},deficit:0,tag:'',
   init(){
     this.goText=$('#go').textContent;rollDay();store();
     $('#ladder').addEventListener('click',()=>{audio();if(Net.on)return;if(Ladder.on){Ladder.stop();$('#go').textContent=Career.goText;return}Ladder.on=true;Ladder.i=0;Ladder.pick=G.level;Career.paint();Ladder.card()});
+    $('#tutBtn').addEventListener('click',()=>{audio();if(Net.on)return;Tut.start()});
+    $('#tutSkip').addEventListener('click',()=>Tut.stop(false));
     $('#vsGo').addEventListener('click',()=>Ladder.fight());
     $('#vsQuit').addEventListener('click',()=>{Ladder.stop();$('#go').textContent=Career.goText});
     $('#careerBtn').addEventListener('click',()=>{Career.page();$('#career').hidden=false;$('#career').scrollTop=0});
@@ -1491,6 +1547,7 @@ const Career={M:{},deficit:0,tag:'',
     b.innerHTML=Ladder.on?`結束這輪擂台<small>目前第 ${Ladder.i+1} 關</small>`:`河濱擂台<small>${Save.best?'最佳 '+Save.best+' / 8 關':'連闖八關，對決三位傳說'}</small>`;
     $('#careerBtn').innerHTML=`生涯<small>Lv.${L.l}</small>`;
     $('#ladder').hidden=/[?&]r=/.test(location.search);
+    $('#tutBtn').classList.toggle('new',!Save.tut);
     $('#lv').hidden=Ladder.on||/[?&]r=/.test(location.search);
     document.querySelector('.foot').classList.toggle('ladder',Ladder.on);
   },
@@ -1557,11 +1614,12 @@ const Career={M:{},deficit:0,tag:'',
     $('#cFeats').innerHTML=ks.map(k=>`<li class="${Save.f[k]?'done':'off'}"><b>${FEATS[k][0]}</b>${Save.f[k]?' ×'+Save.f[k]:''}<small>${FEATS[k][1]}</small></li>`).join('');
   }
 };
-window.__career={Save,Ladder,Career,STAGES,dailies,G};
+window.__career={Save,Ladder,Career,STAGES,dailies,G,Tut,TUT};
 function drain(){
+  Tut.tick();
   for(const[k,d]of G.fx){
     const me=d.p===G.me,P=G.p[d.p];
-    Career.ev(k,d);
+    if(Tut.on)Tut.ev(k,d);else Career.ev(k,d);
     switch(k){
       case'check':hud.dataset.mode=d.off===G.me?'off':'def';if(d.off===G.me)hint('atk','推搖桿選方向，招式鍵上的字就是現在的招式，按下去出招。');else hint('def',G.online?'地上出現紅箭頭就跟方向滑動；朋友對戰連續三次失誤才會斷踝。':'地上出現紅箭頭時，別往反方向推。連兩次跟不上才會斷踝。');break;
       case'squeak':SFX.squeak(d.soft?.035:.06);if(P)puff(P.x,.1,P.z,d.soft?1:2,.6);break;
