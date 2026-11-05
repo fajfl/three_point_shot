@@ -1075,7 +1075,19 @@ const BODIES=[
   mkBody({skin:0xc98d62,jersey:0xffc917,trim:0x141b55,shorts:0xffc917,hair:0x15121c,band:0xf8f3e6,shoe:0xf4f1ea,sock:0xf4f1ea,num:'7',numColor:0x141b55}),
   mkBody({skin:0x7a4a30,jersey:0xff4d3d,trim:0xf8f3e6,shorts:0xff4d3d,hair:0x10121f,cap:true,shoe:0xf8f3e6,sock:0x10121f,num:'23',numColor:0xf8f3e6})
 ];
-function dressUp(){G.p.forEach((p,i)=>{const t=TP[p.type],B=BODIES[i^G.me];B.root.scale.set(t.w,t.h,t.w);B.U.uN.value=NUMS[p.type]})}
+// 球衣統一依玩家自身視角：不論房主或加入者，本機黃色、對手紅色。
+const TEAM_JERSEYS=[
+  {jersey:0xffd21f,shorts:0xffd21f,trim:0x141b55,number:0x141b55},
+  {jersey:0xff4d3d,shorts:0xff4d3d,trim:0xf8f3e6,number:0xf8f3e6}
+];
+function dressUp(){
+  G.p.forEach(p=>{
+    const t=TP[p.type],side=p.id===G.me?0:1,B=BODIES[side],kit=TEAM_JERSEYS[side];
+    B.root.scale.set(t.w,t.h,t.w);B.U.uN.value=NUMS[p.type];
+    B.U.uJ.value.copy(lin(kit.jersey));B.U.uS.value.copy(lin(kit.shorts));
+    B.U.uT.value.copy(lin(kit.trim));B.U.uD.value.copy(lin(kit.number));
+  });
+}
 const shadows=[mkBlob(1.5),mkBlob(1.5)],rings=[mkRing(0xffd21f),mkRing(0xff4d3d)],ballShadow=mkBlob(.8);
 shadows.forEach(s=>s.material.opacity=.7);
 const ballTex=canvasTex(512,256,(g,w,h)=>{
@@ -1448,7 +1460,7 @@ if(window.__ONLINE){
     const fi=INP[1-G.me];fi.x=foe.ix;fi.z=foe.iz;fi.mag=foe.mag;fi.a=fi.b=fi.c=false;
     Net.log=Net.log.filter(e=>e.s>m.a);
     // 網速變慢時回放更多未確認輸入，避免將預測位置直接重置成較舊快照。
-    let budget=Math.max(48,Math.min(144,Math.ceil((Net.rtt+Net.jitter*1.5+110)/1000/H)));
+    let budget=Math.max(48,Math.min(84,Math.ceil((Net.rtt+Net.jitter*1.5+110)/1000/H)));
     for(const e of Net.log){
       live.x=e.x;live.z=e.z;live.mag=e.m;live.a=e.a;live.b=e.b;live.c=e.c;live.tapA=e.ta;live.tapB=e.tb;live.tapC=e.tc;
       for(let i=0;i<e.n&&budget>0&&G.phase!=='over';i++,budget--)step(H);
@@ -1462,6 +1474,7 @@ if(window.__ONLINE){
     if(hyp(ex,ey,ez)<1.6){b.ex=clamp((b.ex||0)*.5+ex*.7,-.9,.9);b.ey=clamp((b.ey||0)*.5+ey*.7,-.9,.9);b.ez=clamp((b.ez||0)*.5+ez*.7,-.9,.9)}
     else{b.ex=b.ey=b.ez=0}
     for(const f of m.fx){if(f[0]==='over'&&f[1].stats)G.stats=f[1].stats;G.fx.push(f)}
+    if(m.fx.some(f=>f[0]==='types'))dressUp();
   }
   function onMsg(m){
     switch(m.t){
@@ -1626,7 +1639,7 @@ function view(dtR,dtS){
   const p0=G.p[G.me],p1=G.p[1-G.me],vm=G.me;
   // 跟著球走
   const focusP=G.camT>0?G.camP:(G.holder||null);
-  let fx=focusP?focusP.x:G.ball.x,fz=focusP?focusP.z:G.ball.z;
+  let fx=focusP?focusP.x+(focusP.ex||0):G.ball.x+(G.ball.ex||0),fz=focusP?focusP.z+(focusP.ez||0):G.ball.z+(G.ball.ez||0);
   camTarget.set(clamp(fx*.42,-1.7,1.7),1,clamp(lerp(fz,1.5,.34),4.4,6.8));
   const wantZoom=G.camT>0?.68:1;
   zoom+=(wantZoom-zoom)*(1-Math.exp(-(G.camT>0?7:3.5)*dtR));
