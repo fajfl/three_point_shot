@@ -9,7 +9,10 @@ export class GameRoom extends DurableObject {
   async fetch() {
     const [client, server] = Object.values(new WebSocketPair());
     server.accept();
-    const sock = { send: m => { try { server.send(m); } catch { /* 對方已離線 */ } } };
+    const sock = {
+      send: m => { try { server.send(m); } catch { /* 對方已離線 */ } },
+      buffered: () => Number.isFinite(server.bufferedAmount) ? server.bufferedAmount : 0
+    };
     server.addEventListener('message', e => this.room.message(sock, e.data));
     const bye = () => this.room.close(sock);
     server.addEventListener('close', bye);
