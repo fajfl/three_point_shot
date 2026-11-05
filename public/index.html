@@ -114,6 +114,44 @@ body{font-family:var(--tc);-webkit-user-select:none;user-select:none;-webkit-tou
 #lobState{margin:0;min-height:1.5em;font-size:15px;font-weight:700}
 #copy,#copyCode,#lobBack{min-height:46px;padding:0 20px;border:2px solid var(--chalk);border-radius:4px;background:transparent;color:var(--chalk);font:700 15px/1 var(--tc)}
 #fail{position:absolute;inset:0;display:grid;place-items:center;padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:var(--night);text-align:center;line-height:1.6}
+#recap{margin:0;padding:8px 10px;background:rgba(10,17,56,.82);border-left:4px solid var(--you);border-radius:3px;font:700 13px/1.55 var(--tc)}
+#recap b{color:var(--you);font-weight:900}
+#result:not([hidden])~.how,.foot.ladder .how{display:none}
+.foot.ladder #host,.foot.ladder #joinBox{display:none!important}
+#modes{display:grid;grid-template-columns:2fr 1fr;gap:8px}
+#modes button{min-height:48px;padding:4px 6px;border:2px solid var(--you);border-radius:4px;background:rgba(10,17,56,.82);color:var(--you);font:900 16px/1.15 var(--tc)}
+#modes small{display:block;font:500 11px/1.2 var(--tc);color:var(--chalk)}
+#careerBtn{border-color:var(--chalk)!important;color:var(--chalk)!important}
+#vs{position:absolute;inset:0;z-index:5;display:grid;align-content:center;justify-items:center;gap:14px;padding:24px max(16px,env(safe-area-inset-left,0px));background:rgba(10,17,56,.93);text-align:center}
+#vsStage{margin:0;font:900 18px/1 var(--num);letter-spacing:.14em;color:var(--you)}
+#vsDots{display:flex;gap:6px;margin:0;padding:0;list-style:none}
+#vsDots li{width:22px;height:6px;border-radius:2px;background:rgba(248,243,230,.25)}
+#vsDots li.done{background:var(--good)}
+#vsDots li.now{background:var(--you)}
+#vsDots li.boss{height:10px}
+#vs h2{margin:0;font:900 clamp(36px,12vw,54px)/1.08 var(--tc);-webkit-text-stroke:0;transform:skewX(-6deg)}
+#vs.boss h2{color:var(--you);text-shadow:4px 4px 0 var(--bad)}
+#vsDesc{margin:0;max-width:320px;font-size:15px;line-height:1.55;font-weight:500}
+#vsGo{min-width:220px;min-height:56px;border:0;border-radius:4px;background:var(--you);color:var(--night);font:900 26px/1 var(--tc);letter-spacing:.14em}
+#vsQuit,#cClose{min-height:46px;padding:0 20px;border:2px solid var(--chalk);border-radius:4px;background:transparent;color:var(--chalk);font:700 15px/1 var(--tc)}
+#career{position:absolute;inset:0;z-index:5;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:calc(env(safe-area-inset-top,0px) + 18px) max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 18px);background:var(--night)}
+#career h2{margin:18px 0 8px;font:900 17px/1.2 var(--tc)}
+#career ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+#career li{padding:8px 10px;background:var(--night-2);border-radius:4px;font-size:13px;line-height:1.45}
+#career li b{font-weight:900;font-size:14px}
+#career li small{display:block;font-size:12px;opacity:.82}
+#career li.done{box-shadow:inset 3px 0 0 var(--good)}
+#career li.off{opacity:.62}
+#cHead strong{display:block;font:900 30px/1.15 var(--tc);color:var(--you)}
+#cHead span{font-size:13px;font-weight:700}
+#cBar{height:8px;margin-top:6px;background:var(--night-2);border-radius:2px;overflow:hidden}
+#cBar i{display:block;height:100%;background:var(--you)}
+#cFeats{grid-template-columns:1fr 1fr}
+#cNum{display:flex;flex-wrap:wrap;gap:8px}
+#cNum button{min-width:58px;min-height:44px;border:2px solid var(--chalk);border-radius:4px;background:transparent;color:var(--chalk);font:800 18px/1 var(--num)}
+#cNum button[aria-pressed="true"]{background:var(--chalk);color:var(--night)}
+#cNum button:disabled{opacity:.35}
+#cClose{width:100%;margin-top:20px}
 @media (max-height:760px){.how{display:none}}
 @media (max-height:640px){.seg small{display:none}.logo{font-size:84px}#menu{padding-top:calc(env(safe-area-inset-top,0px) + 14px)}}
 @media (prefers-reduced-motion:reduce){#banner.play{animation-duration:1.6s;animation-name:fadeOnly}}
@@ -149,6 +187,7 @@ body{font-family:var(--tc);-webkit-user-select:none;user-select:none;-webkit-tou
       </div>
       <div class="foot">
         <p id="result" hidden></p>
+        <p id="recap" hidden></p>
         <p id="again" role="status" hidden></p>
         <fieldset id="kind" class="seg">
           <legend>你打哪種球員</legend>
@@ -168,6 +207,7 @@ body{font-family:var(--tc);-webkit-user-select:none;user-select:none;-webkit-tou
           <div id="joinRow"><input id="roomCode" type="text" inputmode="text" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="例如 AB3K" aria-label="4 至 8 碼房間代碼"><button id="joinRoom" type="button">加入</button></div>
           <p id="joinError" role="status" hidden></p>
         </div>
+        <div id="modes"><button id="ladder" type="button">河濱擂台</button><button id="careerBtn" type="button">生涯</button></div>
         <button id="go" type="button">開打</button>
         <p class="how"><b>招式鍵</b>配搖桿：左右變向、往後後撤、往前突破，貼近對手時變成背後運球和轉身，按鈕會顯示現在的招式。先晃再突破更快。<b>操作</b>右下投籃／封蓋、右中運球招式／抄球、右上絕招。<b>投籃</b>長按到綠區放開，側跑騎馬射箭，搖桿往後是後仰，連點兩下假投。近框一律灌籃，被蓋前約 0.7 秒慢動作出現小綠條，按「拉桿！」可以改成反手灌籃。後撤步接三分可先按住投籃，踩到三分線立即出手，綠條較大；假投騙跳後或對手抄空後立刻突破更快。斷踝失誤每次換球權歸零。火鍋把球打向空地，雙方要追球。</p>
       </div>
@@ -180,6 +220,22 @@ body{font-family:var(--tc);-webkit-user-select:none;user-select:none;-webkit-tou
       <button id="copyCode" type="button">複製房號</button>
       <p id="lobState" role="status"></p>
       <button id="lobBack" type="button">取消</button>
+    </section>
+    <section id="vs" hidden aria-label="擂台對手">
+      <p id="vsStage"></p>
+      <ol id="vsDots" aria-hidden="true"></ol>
+      <h2 id="vsName"></h2>
+      <p id="vsDesc"></p>
+      <button id="vsGo" type="button">開打</button>
+      <button id="vsQuit" type="button">離開擂台</button>
+    </section>
+    <section id="career" hidden aria-label="生涯">
+      <header id="cHead"></header>
+      <h2>今日任務</h2><ul id="cDaily"></ul>
+      <h2>河濱傳說</h2><ul id="cLegend"></ul>
+      <h2>球衣號碼</h2><div id="cNum"></div>
+      <h2>技巧圖鑑 <span id="cCount"></span></h2><ul id="cFeats"></ul>
+      <button id="cClose" type="button">回到球場</button>
     </section>
     <div id="fail" hidden>球場的 3D 畫面載入失敗。請確認網路連線，再重新開啟這一頁。</div>
   </div>
@@ -731,7 +787,7 @@ function aiOff(p,o,L,dt){
   if(!p.aiG||p.aiGT<=0||hyp(p.aiG.x-p.x,p.aiG.z-p.z)<.8){
     p.aiGT=rnd(.9,1.8);
     if(G.needClear){const a=Math.atan2(p.x-HOOP.x,p.z-HOOP.z)||.01,r=ARC+1.5;p.aiG={x:clamp(HOOP.x+Math.sin(a)*r,-5,5),z:clamp(HOOP.z+Math.abs(Math.cos(a))*r,6,10)}}
-    else p.aiG={x:rnd(-3.2,3.2),z:rnd(1.8,5)};
+    else p.aiG=L.post?{x:rnd(-1.5,1.5),z:rnd(1.9,3.1)}:L.wing?{x:rnd(-4.2,4.2),z:rnd(3,5.6)}:{x:rnd(-3.2,3.2),z:rnd(1.8,5)};
   }
   steerTo(p,p.aiG.x,p.aiG.z,.8);
   if(down)steerTo(p,HOOP.x,HOOP.z+.6,.8);
@@ -743,16 +799,16 @@ function aiOff(p,o,L,dt){
   const shoot=()=>{
     if(d>=LAY&&Math.random()<.13){doFake(p);return}
     p.b=true;p.aiRel=SHOT_MID+gauss()*L.aim;
-    if(d>=LAY&&gap<2&&Math.random()<.45){p.ix=-f.x;p.iz=-f.z;p.mag=1}
+    if(d>=LAY&&gap<(L.fadeGap||2)&&Math.random()<(L.fade||.45)){p.ix=-f.x;p.iz=-f.z;p.mag=1}
     else if(d<LAY&&d>1.7&&gap<2.4&&Math.random()<.5){const s=Math.random()<.5?1:-1;p.ix=-f.z*s;p.iz=f.x*s;p.mag=1}
   };
   if(d<LAY&&(d<2.6||gap>1.6||speed(p)>3.2)){shoot();return}
   if(G.clock<1.8){shoot();return}
   if(down&&(gap>2.2)&&d<ARC+.8&&Math.random()<.4){shoot();return}
-  if(gap>2.4&&d<ARC+1&&Math.random()<.5){shoot();return}
-  if(gap>1.75&&d>3.2&&d<ARC+.2&&Math.random()<.3){shoot();return}
+  if(!L.post&&gap>2.4&&d<ARC+1&&Math.random()<.5){shoot();return}
+  if(!L.post&&gap>1.75&&d>3.2&&d<ARC+.2&&Math.random()<.3){shoot();return}
   if(gap<2.9&&Math.random()<L.move){
-    const r=Math.random();
+    const r=Math.random()+(L.drive||0);
         if(r<.55){const s=Math.random()<.5?1:-1;p.ix=-f.z*s;p.iz=f.x*s;p.mag=1}
     else if(r<.75&&d<ARC+1.4){p.ix=-f.x;p.iz=-f.z;p.mag=1}
     else{p.ix=f.x;p.iz=f.z;p.mag=1}
@@ -1064,12 +1120,12 @@ function mkBody(o){
   const cen=new THREE.Vector3(0,1.72*BODY_S,.005*BODY_S).sub(hp).applyQuaternion(hair.quaternion).divideScalar(BODY_S);hair.position.copy(cen);head.add(hair);
   const hm=new THREE.MeshStandardMaterial({color:lin(o.hair),roughness:o.cap?.7:.9});
   const dome=new THREE.Mesh(new THREE.SphereGeometry(.122,18,12,0,PI*2,0,PI*.56),hm);dome.scale.set(.98,1.04,1.1);dome.position.set(0,.012,-.014);dome.rotation.x=-.28;dome.castShadow=true;hair.add(dome);
-  if(o.cap){const v=new THREE.Mesh(new THREE.BoxGeometry(.15,.016,.13),hm);v.position.set(0,.055,-.165);v.rotation.x=-.1;hair.add(v)}
-  if(o.band){const b=new THREE.Mesh(new THREE.TorusGeometry(.118,.014,8,28),new THREE.MeshStandardMaterial({color:lin(o.band),roughness:.7}));b.rotation.x=PI/2-.2;b.position.set(0,.02,.0);b.scale.set(1,1.08,1);hair.add(b)}
+  let visor=null,bandM=null;if(o.cap){visor=new THREE.Mesh(new THREE.BoxGeometry(.15,.016,.13),hm);visor.position.set(0,.055,-.165);visor.rotation.x=-.1;hair.add(visor)}
+  if(o.band){const b=new THREE.Mesh(new THREE.TorusGeometry(.118,.014,8,28),new THREE.MeshStandardMaterial({color:lin(o.band),roughness:.7}));b.rotation.x=PI/2-.2;b.position.set(0,.02,.0);b.scale.set(1,1.08,1);hair.add(b);bandM=b}
   const mix=new THREE.AnimationMixer(root),acts={};
   for(const n in RIGD.clips){const a=mix.clipAction(RIGD.clips[n]);a.play();a.setEffectiveWeight(0);acts[n]=a}
   acts.Idle_Loop.setEffectiveWeight(1);
-  return{root,tilt,by,head,mix,acts,U,mesh,W:{},cur:{Idle_Loop:1},wL:0,wR:0,tL:new THREE.Vector3(0,1,0),tR:new THREE.Vector3(0,1,0),pL:new THREE.Vector3(0,-1,0),pR:new THREE.Vector3(0,-1,0),lean:{x:0,z:0},shoeLost:false,hairOff:0};
+  return{hairM:hm,visor,bandM,base:o,root,tilt,by,head,mix,acts,U,mesh,W:{},cur:{Idle_Loop:1},wL:0,wR:0,tL:new THREE.Vector3(0,1,0),tR:new THREE.Vector3(0,1,0),pL:new THREE.Vector3(0,-1,0),pR:new THREE.Vector3(0,-1,0),lean:{x:0,z:0},shoeLost:false,hairOff:0};
 }
 const numTex=n=>canvasTex(256,256,(g)=>{g.font='900 '+(n.length>1?170:210)+'px "Big Shoulders Display",Impact,sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillStyle='#fff';g.fillText(n,128,136)});
 const NUMS={};for(const k in TP)NUMS[k]=numTex(TP[k].num);
@@ -1085,9 +1141,13 @@ const TEAM_JERSEYS=[
 function dressUp(){
   G.p.forEach(p=>{
     const t=TP[p.type],side=p.id===G.me?0:1,B=BODIES[side],kit=TEAM_JERSEYS[side];
-    B.root.scale.set(t.w,t.h,t.w);B.U.uN.value=NUMS[p.type];
-    B.U.uJ.value.copy(lin(kit.jersey));B.U.uS.value.copy(lin(kit.shorts));
-    B.U.uT.value.copy(lin(kit.trim));B.U.uD.value.copy(lin(kit.number));
+    const L=side?Foe.kit:null,sc=L&&L.scale||1,num=L?L.num:(side?'':Save.num);
+    B.root.scale.set(t.w*sc,t.h*sc,t.w*sc);B.U.uN.value=num?(NUMS[num]=NUMS[num]||numTex(num)):NUMS[p.type];
+    const K=L||kit;
+    B.U.uJ.value.copy(lin(K.jersey));B.U.uS.value.copy(lin(K.shorts));
+    B.U.uT.value.copy(lin(K.trim));B.U.uD.value.copy(lin(K.number));
+    const hc=lin(L?L.hair:B.base.hair);B.U.uH.value.copy(hc);B.hairM.color.copy(hc);B.U.uK.value.copy(lin(L?L.skin:B.base.skin));
+    if(B.visor)B.visor.visible=!L;if(B.bandM)B.bandM.visible=!L;
   });
 }
 const shadows=[mkBlob(1.5),mkBlob(1.5)],rings=[mkRing(0xffd21f),mkRing(0xff4d3d)],ballShadow=mkBlob(.8);
@@ -1338,9 +1398,170 @@ function hint(key,text,times=2){
 }
 const CAP=['腳踝請假了','鞋子先走一步','地板比較懂他','他還在找你在哪','這球可以剪成短片'];
 const CAP_ME=['鞋子掉了','重心沒跟上','起來，還能打','他晃過你了'];
+/* ───────────── 生涯、圖鑑、每日任務、河濱擂台：只存在這支手機，不影響對戰數值 ───────────── */
+const Foe={kit:null};
+const FEATS={
+  ankle:['斷踝','連續晃過對手，把人放倒'],
+  green:['完美出手','在綠區放開投籃'],
+  dunk:['灌爆','衝進籃下按投籃'],
+  three:['三分','站在三分線外投進'],
+  block:['火鍋','對手出手時按封蓋'],
+  steal:['抄截','貼近時抓對手運球空檔'],
+  chase:['火鍋反擊','蓋掉後搶回球'],
+  stepThree:['後撤三分','後撤步接投籃，投進三分'],
+  ride:['騎馬射箭','兩分線內橫移中投籃，投進'],
+  fade:['後仰跳投','往後推搖桿出手，投進'],
+  pullMake:['拉桿命中','上籃時再按一次投籃，投進'],
+  rescue:['極限拉桿','灌籃快被蓋時對準綠條'],
+  bait:['假投騙跳','連按兩下投籃，騙對手起跳'],
+  baitDrive:['騙跳突破','騙起來後立刻突破'],
+  whiffDrive:['抓到破綻','對手抄空後立刻突破'],
+  combo:['連招突破','變向後馬上接突破'],
+  ult:['絕招','能量集滿按絕招'],
+  comeback:['大逆轉','落後 4 分以上贏球'],
+  crush:['大勝','對手 3 分以內贏球']
+};
+const SHOW=[['ankle','放倒'],['green','完美'],['dunk','灌籃'],['three','三分'],['block','火鍋'],['steal','抄截']];
+const TITLES=['河濱新人','球場常客','系隊替補','系隊先發','夜場殺手','河濱名人','街頭傳說','曼巴心態'];
+const need=l=>80+l*40;
+const lvOf=xp=>{let l=1;while(xp>=need(l)){xp-=need(l);l++}return{l,xp,n:need(l),title:TITLES[Math.min(TITLES.length-1,Math.floor((l-1)/3))]}};
+const POOL=[['ankle',2,'放倒對手 2 次'],['green',5,'打出 5 次完美出手'],['three',3,'投進 3 顆三分'],['dunk',4,'灌籃 4 次'],['block',2,'蓋掉 2 球'],['steal',3,'抄截 3 次'],['win',2,'贏 2 場'],['stage',2,'擂台闖過 2 關'],['bait',1,'騙對手起跳 1 次'],['stepThree',1,'投進 1 顆後撤三分'],['fade',1,'投進 1 顆後仰跳投'],['ride',1,'投進 1 顆騎馬射箭'],['pullMake',1,'拉桿投進 1 球'],['combo',2,'連招突破 2 次']];
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()};
+const dailies=day=>{let h=7;for(const c of day)h=(h*31+c.charCodeAt(0))>>>0;const a=POOL.slice(),out=[];for(let i=0;i<3;i++){h=(h*2654435761+11)>>>0;out.push(a.splice(h%a.length,1)[0])}return out};
+const Save=(()=>{let s=null;try{s=JSON.parse(localStorage.getItem('dh-save-v1'))}catch(e){}return Object.assign({xp:0,games:0,wins:0,f:{},best:0,beat:{},champ:0,num:'',day:'',dc:{},dd:[]},s&&typeof s==='object'?s:{})})();
+const store=()=>{try{localStorage.setItem('dh-save-v1',JSON.stringify(Save))}catch(e){}};
+const rollDay=()=>{const d=today();if(Save.day!==d){Save.day=d;Save.dc={};Save.dd=[]}};
+
+/* 擂台八關。傳說關用對手打法重現球星的招牌，血量與規則不變。 */
+const K=(jersey,trim,number,skin,hair,num,scale)=>({jersey,shorts:jersey,trim,number,skin,hair,num,scale});
+const STAGES=[
+  {n:'國中生小杰',d:'放學先來練球，投籃還在看手。',type:'slash',l:'rookie'},
+  {n:'夜市阿弟',d:'剛打完彈珠就上場，三分線外手很熱。',type:'shoot',a:{pull:.3,react:.22,read:.5,aim:.14,move:.62,steal:.4,bite:.5,block:.4}},
+  {n:'系隊學長',d:'會讀你的假動作，別每次都同一招。',type:'wall',l:'reg'},
+  {n:'俠客 Shaq',d:'#34，一路往禁區擠。他幾乎不投外線，但你很難蓋到他。第一位傳說。',type:'wall',boss:1,kit:K(0x4b2a8c,0xfdb927,0xfdb927,0x4f2f1f,0x4f2f1f,'34',1.14),
+    a:{pull:.45,react:.18,read:.62,aim:.15,move:.6,steal:.3,bite:.35,block:.88,post:true,drive:.55}},
+  {n:'河濱夜貓',d:'路燈關了還在打，專等你抄空。',type:'slash',a:{pull:.6,react:.17,read:.7,aim:.09,move:.82,steal:.65,bite:.3,block:.62,drive:.2}},
+  {n:'河濱阿伯',d:'膝蓋不好，但你的每個習慣他都看過。',type:'shoot',l:'king'},
+  {n:'飛人 Jordan',d:'#23，第一步就過人，起飛之後還能拉桿。第二位傳說。',type:'slash',boss:1,kit:K(0xd8202e,0x101014,0x101014,0x5e3a26,0x5e3a26,'23',1.03),
+    a:{pull:.92,react:.13,read:.82,aim:.06,move:.93,steal:.85,bite:.15,block:.8,drive:.42}},
+  {n:'黑曼巴 Kobe',d:'#24，凌晨四點就在球場了。中距離翻身後仰，你貼得再緊他也敢出手。最後一位傳說。',type:'shoot',boss:1,kit:K(0x17171c,0xfdb927,0xfdb927,0x6b4228,0x17110e,'24',1.03),
+    a:{pull:.9,react:.12,read:.9,aim:.04,move:.96,steal:.88,bite:.1,block:.82,fade:.88,fadeGap:3.2,wing:true,drive:.12}}
+];
+STAGES.forEach((s,i)=>{LV['s'+i]=Object.assign({},s.l?LV[s.l]:s.a,{name:s.n})});
+const LEGEND=[[3,'俠客 Shaq','34'],[6,'飛人 Jordan','23'],[7,'黑曼巴 Kobe','24']];
+
+const Ladder={on:false,i:0,pick:'reg',fighting:false,
+  card(){
+    const s=STAGES[this.i],vs=$('#vs');
+    $('#vsStage').textContent=`第 ${this.i+1} 關 / 8`;$('#vsName').textContent=s.n;$('#vsDesc').textContent=s.d;vs.classList.toggle('boss',!!s.boss);
+    $('#vsDots').innerHTML=STAGES.map((t,j)=>`<li class="${j<this.i?'done':j===this.i?'now':''} ${t.boss?'boss':''}"></li>`).join('');
+    vs.hidden=false;
+  },
+  fight(){
+    const s=STAGES[this.i];$('#vs').hidden=true;this.fighting=true;
+    Inp.x=Inp.z=Inp.mag=0;Inp.a=Inp.b=false;startAmb();showHud(s.n.split(' ')[0]);
+    Foe.kit=s.kit||null;G.foeType=s.type;Career.begin();newGame(false,'s'+this.i);G.foeType=null;dressUp();
+    try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}
+  },
+  stop(){this.on=false;this.fighting=false;G.level=this.pick;Foe.kit=null;$('#vs').hidden=true;Career.paint()},
+  // 回傳結算要顯示的句子
+  after(win){
+    const i=this.i,s=STAGES[i];this.fighting=false;G.level=this.pick;
+    if(!win){this.on=false;return `擂台止步第 ${i+1} 關（最佳 ${Save.best} 關）`}
+    if(i+1>Save.best)Save.best=i+1;
+    if(s.boss)Save.beat[i]=1;
+    this.i++;
+    if(this.i>=STAGES.length){this.on=false;Save.champ++;return '<b>河濱之王！</b>八關全破'}
+    return `過關！下一位：<b>${STAGES[this.i].n}</b>`;
+  }
+};
+
+const Career={M:{},deficit:0,tag:'',
+  init(){
+    this.goText=$('#go').textContent;rollDay();store();
+    $('#ladder').addEventListener('click',()=>{audio();if(Net.on)return;if(Ladder.on){Ladder.stop();$('#go').textContent=Career.goText;return}Ladder.on=true;Ladder.i=0;Ladder.pick=G.level;Career.paint();Ladder.card()});
+    $('#vsGo').addEventListener('click',()=>Ladder.fight());
+    $('#vsQuit').addEventListener('click',()=>{Ladder.stop();$('#go').textContent=Career.goText});
+    $('#careerBtn').addEventListener('click',()=>{Career.page();$('#career').hidden=false;$('#career').scrollTop=0});
+    $('#cClose').addEventListener('click',()=>{$('#career').hidden=true;Career.paint()});
+    this.paint();
+  },
+  paint(){
+    const L=lvOf(Save.xp),b=$('#ladder');
+    b.innerHTML=Ladder.on?`結束這輪擂台<small>目前第 ${Ladder.i+1} 關</small>`:`河濱擂台<small>${Save.best?'最佳 '+Save.best+' / 8 關':'連闖八關，對決三位傳說'}</small>`;
+    $('#careerBtn').innerHTML=`生涯<small>Lv.${L.l}</small>`;
+    $('#ladder').hidden=/[?&]r=/.test(location.search);
+    $('#lv').hidden=Ladder.on||/[?&]r=/.test(location.search);
+    document.querySelector('.foot').classList.toggle('ladder',Ladder.on);
+  },
+  begin(){this.M={};this.deficit=0;this.tag=''},
+  add(k,n=1){
+    if(!this.M[k]&&!Save.f[k]&&FEATS[k])hint('f'+k,'圖鑑解鎖：'+FEATS[k][0],1);
+    this.M[k]=(this.M[k]||0)+n;
+  },
+  ev(k,d){
+    if(G.attract||G.finale)return;
+    const me=d.p===G.me;
+    switch(k){
+      case'check':this.tag='';break;
+      case'ankle':if(d.by===G.me)this.add('ankle');break;
+      case'release':if(me&&d.q==='green')this.add('green');break;
+      case'stepShot':if(me)this.tag=d.three?'stepThree':'';break;
+      case'ride':case'fade':if(me)this.tag=k;break;
+      case'pull':if(me){this.tag='pullMake';if(d.rescue)this.add('rescue')}break;
+      case'block':case'steal':case'chase':case'bait':case'baitDrive':case'whiffDrive':case'combo':case'ult':if(me)this.add(k);break;
+      case'score':
+        if(me){if(d.kind==='dunk')this.add('dunk');if(d.pts===3)this.add('three');if(this.tag)this.add(this.tag);this.tag=''}
+        this.deficit=Math.max(this.deficit,G.score[1-G.me]-G.score[G.me]);
+        break;
+    }
+  },
+  finish(win){
+    const M=this.M,a=G.score[G.me],b=G.score[1-G.me],before=lvOf(Save.xp).l;
+    if(win&&this.deficit>=4)M.comeback=1;
+    if(win&&b<=3)M.crush=1;
+    const fresh=Object.keys(M).filter(k=>FEATS[k]&&!Save.f[k]);
+    for(const k in M)if(FEATS[k])Save.f[k]=(Save.f[k]||0)+M[k];
+    let xp=20+(win?30:0)+fresh.length*30+Math.min(40,(M.ankle||0)*10+(M.block||0)*4+(M.green||0)*2),line='';
+    Save.games++;if(win)Save.wins++;
+    if(Ladder.on&&Ladder.fighting){
+      if(win){xp+=40+Ladder.i*15;M.stage=1;const s=STAGES[Ladder.i];if(s.boss&&!Save.beat[Ladder.i])xp+=200}
+      line=Ladder.after(win);
+      $('#go').textContent=Ladder.on?'下一關':'再來一場';Career.goText='再來一場';
+    }
+    Foe.kit=null;
+    rollDay();M.win=win?1:0;
+    const done=[];
+    dailies(Save.day).forEach(([k,n,t],i)=>{
+      Save.dc[k]=(Save.dc[k]||0)+(M[k]||0);
+      if(Save.dc[k]>=n&&!Save.dd.includes(i)){Save.dd.push(i);xp+=60;done.push(t)}
+    });
+    Save.xp+=xp;store();
+    const L=lvOf(Save.xp),shown=SHOW.filter(([k])=>M[k]).map(([k,n])=>`${n} ×${M[k]}`).join('、'),r=[];
+    if(line)r.push(line);
+    if(shown)r.push('本場：'+shown);
+    if(fresh.length)r.push('圖鑑新增：<b>'+fresh.map(k=>FEATS[k][0]).join('、')+'</b>');
+    if(done.length)r.push('任務完成：'+done.join('、'));
+    r.push(`+${xp} 經驗 · <b>Lv.${L.l} ${L.title}</b>${L.l>before?' 升級！':''}`);
+    const el=$('#recap');el.innerHTML=r.join('<br>');el.hidden=false;this.paint();
+  },
+  page(){
+    rollDay();const L=lvOf(Save.xp);
+    $('#cHead').innerHTML=`<strong>Lv.${L.l} ${L.title}</strong><span>${Save.games} 場 · ${Save.wins} 勝 · 擂台最佳 ${Save.best} / 8${Save.champ?' · 河濱之王 ×'+Save.champ:''}</span><div id="cBar"><i style="width:${Math.round(L.xp/L.n*100)}%"></i></div>`;
+    $('#cDaily').innerHTML=dailies(Save.day).map(([k,n,t],i)=>{const v=Math.min(n,Save.dc[k]||0);return `<li class="${Save.dd.includes(i)?'done':''}"><b>${t}</b><small>${v} / ${n} · 完成 +60 經驗</small></li>`}).join('');
+    $('#cLegend').innerHTML=LEGEND.map(([i,n,no])=>`<li class="${Save.beat[i]?'done':'off'}"><b>${n}</b><small>${Save.beat[i]?'已擊敗，解鎖 #'+no+' 球衣號碼':'擂台第 '+(i+1)+' 關'}</small></li>`).join('');
+    const nums=[['','預設',true],...LEGEND.map(([i,,no])=>[no,'#'+no,!!Save.beat[i]])];
+    $('#cNum').innerHTML=nums.map(([v,t,ok])=>`<button type="button" data-n="${v}" aria-pressed="${Save.num===v}"${ok?'':' disabled'}>${t}</button>`).join('');
+    for(const b of $('#cNum').querySelectorAll('button'))b.addEventListener('click',()=>{Save.num=b.dataset.n;store();Career.page();dressUp()});
+    const ks=Object.keys(FEATS);$('#cCount').textContent=`${ks.filter(k=>Save.f[k]).length} / ${ks.length}`;
+    $('#cFeats').innerHTML=ks.map(k=>`<li class="${Save.f[k]?'done':'off'}"><b>${FEATS[k][0]}</b>${Save.f[k]?' ×'+Save.f[k]:''}<small>${FEATS[k][1]}</small></li>`).join('');
+  }
+};
+window.__career={Save,Ladder,Career,STAGES,dailies,G};
 function drain(){
   for(const[k,d]of G.fx){
     const me=d.p===G.me,P=G.p[d.p];
+    Career.ev(k,d);
     switch(k){
       case'check':hud.dataset.mode=d.off===G.me?'off':'def';if(d.off===G.me)hint('atk','推搖桿選方向，招式鍵上的字就是現在的招式，按下去出招。');else hint('def',G.online?'地上出現紅箭頭就跟方向滑動；朋友對戰連續三次失誤才會斷踝。':'地上出現紅箭頭時，別往反方向推。連兩次跟不上才會斷踝。');break;
       case'squeak':SFX.squeak(d.soft?.035:.06);if(P)puff(P.x,.1,P.z,d.soft?1:2,.6);break;
@@ -1419,16 +1640,18 @@ function gameOver(){
   res.hidden=false;res.textContent=`${a} : ${b}`;
   const sm=document.createElement('small');sm.textContent=`${win?'你贏了':(Net.on?'朋友':LV[G.level].name)+'贏了'}，放倒對手 ${G.stats.ankle[G.me]} 次，被放倒 ${G.stats.ankle[1-G.me]} 次`;res.append(sm);
   G.winner=win?G.me:1-G.me;G.finale=true;$('#go').textContent='再來一場';menu.hidden=false;hud.dataset.off='1';
+  Career.finish(win);
   if(Net.on){Net.ready=false;Net.afterGame();return}
-  G.attract=true;G.p[0].human=false;overT=setTimeout(()=>newGame(true),3600);
+  G.attract=true;G.p[0].human=false;overT=setTimeout(()=>{newGame(true);dressUp()},3600);
 }
 function showHud(name){
-  clearTimeout(overT);$('#result').hidden=true;menu.hidden=true;$('#lobby').hidden=true;hud.dataset.off='0';$('#rivalName').textContent=name;$('#s0').textContent='0';$('#s1').textContent='0';
+  clearTimeout(overT);$('#result').hidden=true;$('#recap').hidden=true;menu.hidden=true;$('#lobby').hidden=true;hud.dataset.off='0';$('#rivalName').textContent=name;$('#s0').textContent='0';$('#s1').textContent='0';
 }
 function startGame(){
   if(Net.on){audio();Net.pressReady();return}
+  if(Ladder.on){audio();Ladder.card();return}
   audio();Inp.x=Inp.z=Inp.mag=0;Inp.a=Inp.b=false;startAmb();showHud(LV[G.level].name);
-  newGame(false,G.level);
+  Foe.kit=null;Career.begin();newGame(false,G.level);dressUp();
   setTimeout(()=>hint('foe','對手今天打'+TP[G.p[1].type].n+'。絕招鍵集滿能量就能放。',3),600);
   try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}
 }
@@ -1463,7 +1686,7 @@ if(window.__ONLINE){
     Net.seat=m.seat;G.me=m.seat;Inp=INP[m.seat];Inp.x=Inp.z=Inp.mag=0;Inp.a=Inp.b=Inp.c=false;
     G.online=true;G.attract=false;G.quiet=true;G.finale=false;G.p[0].human=G.p[1].human=true;
     dressUp(); // 每一端固定本機黃、對方紅（不依房主席次）
-    if(!m.resume){Net.log=[];Net.cur=null;Net.seq=0;Net.sendT=0;G.phase='check';G.score=[0,0]}
+    if(!m.resume){Career.begin();Net.log=[];Net.cur=null;Net.seq=0;Net.sendT=0;G.phase='check';G.score=[0,0]}
     Net.live=true;Net.ready=false;$('#again').hidden=true;Net.waitPeer=!!m.resume;Net.paused=!!m.resume;Net.stalled=false;Net.lastStateAt=Date.now();
     showHud('朋友');startAmb();$('#netPing').hidden=false;
     try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}
@@ -1610,6 +1833,7 @@ if(window.__ONLINE){
 window.__net=Net;
 
 $('#go').addEventListener('click',startGame);
+Career.init();
 const seg=(sel,attr,key,store)=>{for(const b of document.querySelectorAll(sel+' button'))b.addEventListener('click',()=>{G[key]=b.dataset[attr];for(const c of document.querySelectorAll(sel+' button'))c.setAttribute('aria-pressed',c===b?'true':'false');try{localStorage.setItem(store,G[key])}catch(e){}});try{const v=localStorage.getItem(store),b=v&&document.querySelector(`${sel} [data-${attr}="${v}"]`);if(b)b.click()}catch(e){}};
 seg('#kind','tp','myType','dh-tp');
 for(const b of document.querySelectorAll('#lv button'))b.addEventListener('click',()=>{G.level=b.dataset.lv;for(const c of document.querySelectorAll('#lv button'))c.setAttribute('aria-pressed',c===b?'true':'false');try{localStorage.setItem('dh-lv',G.level)}catch(e){}});

@@ -538,7 +538,7 @@ function aiOff(p,o,L,dt){
   if(!p.aiG||p.aiGT<=0||hyp(p.aiG.x-p.x,p.aiG.z-p.z)<.8){
     p.aiGT=rnd(.9,1.8);
     if(G.needClear){const a=Math.atan2(p.x-HOOP.x,p.z-HOOP.z)||.01,r=ARC+1.5;p.aiG={x:clamp(HOOP.x+Math.sin(a)*r,-5,5),z:clamp(HOOP.z+Math.abs(Math.cos(a))*r,6,10)}}
-    else p.aiG={x:rnd(-3.2,3.2),z:rnd(1.8,5)};
+    else p.aiG=L.post?{x:rnd(-1.5,1.5),z:rnd(1.9,3.1)}:L.wing?{x:rnd(-4.2,4.2),z:rnd(3,5.6)}:{x:rnd(-3.2,3.2),z:rnd(1.8,5)};
   }
   steerTo(p,p.aiG.x,p.aiG.z,.8);
   if(down)steerTo(p,HOOP.x,HOOP.z+.6,.8);
@@ -550,16 +550,16 @@ function aiOff(p,o,L,dt){
   const shoot=()=>{
     if(d>=LAY&&Math.random()<.13){doFake(p);return}
     p.b=true;p.aiRel=SHOT_MID+gauss()*L.aim;
-    if(d>=LAY&&gap<2&&Math.random()<.45){p.ix=-f.x;p.iz=-f.z;p.mag=1}
+    if(d>=LAY&&gap<(L.fadeGap||2)&&Math.random()<(L.fade||.45)){p.ix=-f.x;p.iz=-f.z;p.mag=1}
     else if(d<LAY&&d>1.7&&gap<2.4&&Math.random()<.5){const s=Math.random()<.5?1:-1;p.ix=-f.z*s;p.iz=f.x*s;p.mag=1}
   };
   if(d<LAY&&(d<2.6||gap>1.6||speed(p)>3.2)){shoot();return}
   if(G.clock<1.8){shoot();return}
   if(down&&(gap>2.2)&&d<ARC+.8&&Math.random()<.4){shoot();return}
-  if(gap>2.4&&d<ARC+1&&Math.random()<.5){shoot();return}
-  if(gap>1.75&&d>3.2&&d<ARC+.2&&Math.random()<.3){shoot();return}
+  if(!L.post&&gap>2.4&&d<ARC+1&&Math.random()<.5){shoot();return}
+  if(!L.post&&gap>1.75&&d>3.2&&d<ARC+.2&&Math.random()<.3){shoot();return}
   if(gap<2.9&&Math.random()<L.move){
-    const r=Math.random();
+    const r=Math.random()+(L.drive||0);
         if(r<.55){const s=Math.random()<.5?1:-1;p.ix=-f.z*s;p.iz=f.x*s;p.mag=1}
     else if(r<.75&&d<ARC+1.4){p.ix=-f.x;p.iz=-f.z;p.mag=1}
     else{p.ix=f.x;p.iz=f.z;p.mag=1}

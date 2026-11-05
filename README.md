@@ -46,3 +46,9 @@ Cloudflare Workers 匯入這個 repo，部署指令用 `npx wrangler deploy`。�
 - 人物與動作：Quaternius Universal Animation Library，CC0 1.0
 - three.js r128：MIT
 - qrcode-generator（Kazuhiko Arase）：MIT
+
+## 單人進度
+
+- 生涯、技巧圖鑑、每日任務和河濱擂台都只存在手機的 `localStorage`（`dh-save-v1`），不經過伺服器。
+- 擂台八關定義在 `public/index.html` 的 `STAGES`。傳說關的打法用 `LV` 旗標（`post`、`wing`、`fade`、`fadeGap`、`drive`）控制，只影響 AI。
+- 養成只給稱號、圖鑑和號碼，不改任何對戰數值。
