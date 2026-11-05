@@ -1425,16 +1425,16 @@ if(window.__ONLINE){
   function drawQR(){const q=qrcode(0,'M');q.addData(link());q.make();$('#qr').innerHTML=q.createSvgTag({scalable:true,margin:0});$('#lobCode').textContent=Net.room}
   function connect(){
     const ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws/'+Net.room);Net.ws=ws;
-    ws.onopen=()=>{Net.tries=0;send({t:'j',k:token,y:G.myType});if(Net.ready)send({t:'r',y:G.myType});if(Net.live)hintNow('重新連上了')};
+    ws.onopen=()=>{Net.tries=0;send({t:'j',k:token,y:G.myType});if(Net.ready)send({t:'r',y:G.myType});if(Net.live)hintNow('網路已重新連上，等待對戰狀態同步')};
     ws.onmessage=e=>onMsg(JSON.parse(e.data));
-    ws.onclose=()=>{if(!Net.on||Net.ws!==ws)return;if(++Net.tries>30){say('連線中斷了，請重新開房');return}if(Net.live)hintNow('連線中斷，重新連線中');else say('連線中，請稍等');setTimeout(connect,1000)};
+    ws.onclose=()=>{if(!Net.on||Net.ws!==ws)return;Net.paused=Net.live;Net.log=[];Net.cur=null;if(++Net.tries>30){say('連線中斷了，請重新開房');return}if(Net.live)hintNow('連線中斷，重新連線中');else say('連線中，請稍等');setTimeout(connect,1000)};
   }
   function hintNow(t){hintEl.textContent=t;hintEl.classList.add('show');clearTimeout(hintT);hintT=setTimeout(()=>hintEl.classList.remove('show'),2800)}
   function go(m){
     Net.seat=m.seat;G.me=m.seat;Inp=INP[m.seat];Inp.x=Inp.z=Inp.mag=0;Inp.a=Inp.b=Inp.c=false;
     G.online=true;G.attract=false;G.quiet=true;G.finale=false;G.p[0].human=G.p[1].human=true;
     if(!m.resume){Net.log=[];Net.cur=null;Net.seq=0;Net.sendT=0;G.phase='check';G.score=[0,0]}
-    Net.live=true;Net.ready=false;Net.paused=false;showHud('朋友');startAmb();
+    Net.live=true;Net.ready=false;Net.paused=!!m.resume;showHud('朋友');startAmb();
     try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}
   }
   function reconcile(m){
@@ -1477,7 +1477,7 @@ if(window.__ONLINE){
     }
   }
   function flush(){
-    if(!Net.ws||Net.ws.readyState!==1)return;
+    if(!Net.ws||Net.ws.readyState!==1||Net.ws.bufferedAmount>32768)return;
     const t=Net.tap,c={s:++Net.seq,x:Inp.x,z:Inp.z,m:Inp.mag,a:Inp.a,b:Inp.b,c:Inp.c,ta:!!t.a,tb:!!t.b,tc:!!t.c,n:0};
     t.a=t.b=t.c=false;Net.cur=c;Net.log.push(c);if(Net.log.length>64)Net.log.shift();
     send({t:'i',s:c.s,x:+c.x.toFixed(2),z:+c.z.toFixed(2),m:+c.m.toFixed(2),a:c.a,b:c.b,c:c.c,ta:c.ta,tb:c.tb,tc:c.tc});
@@ -1530,7 +1530,7 @@ if(window.__ONLINE){
       joinError.hidden=true;
       Net.on=true;Net.room=code;$('#lv').hidden=true;host.hidden=true;$('#joinBox').hidden=true;
       document.querySelector('.tag').textContent='房間 '+code+' · 選好球員就能開始';
-      $('#go').textContent='再來一場';
+      $('#go').textContent='加入朋友的房間';
       history.replaceState(null,'','/?r='+encodeURIComponent(code));
       startGame();
     };
