@@ -14,10 +14,15 @@ export class Room {
     this.paused = false;
     this.last = 0;
     this.snapT = 0;
+    this.result = null;
+    this.players = [];
   }
   count() { return this.seats.filter(s => s && s.sock).length; }
   each(fn) { for (const s of this.seats) if (s && s.sock) fn(s); }
-  lobby() { const n = this.count(); this.each(s => s.sock.send(JSON.stringify({ t: 'lobby', n }))); }
+  lobby() {
+    const n = this.count(), r = this.seats.filter(s => s && s.ready).length;
+    this.each(s => s.sock.send(JSON.stringify({ t: 'lobby', n, r: s.ready ? r - 1 : r })));
+  }
 
   message(sock, raw) {
     let m; try { m = JSON.parse(raw); } catch { return; }
@@ -52,6 +57,8 @@ export class Room {
     this.seats[i] = old ? Object.assign(old, { sock }) : { i, k: m.k, sock, type: playerType(m.y), ready: false, ack: 0 };
     if (!old) this.seats[i].pendingFx = [];
     sock.send(JSON.stringify({ t: 'seat', seat: i }));
+    // 比賽結束那一刻不在線的手機，回來時補送結果，才不會卡在球場。
+    if (!this.timer && this.result && this.players.includes(m.k)) sock.send(this.result);
     this.lobby();
     if (this.timer) {
       sock.send(JSON.stringify({ t: 'go', seat: i, resume: true }));
@@ -62,7 +69,7 @@ export class Room {
     const seat = this.seats.find(s => s && s.sock === sock);
     if (!seat) return;
     seat.sock = null;
-    if (!this.timer) { if (!seat.ready) this.seats[seat.i] = null; this.lobby(); return; }
+    if (!this.timer) { this.seats[seat.i] = null; this.lobby(); return; }
     this.paused = true;
     this.each(s => s.sock.send('{"t":"wait"}'));
     clearTimeout(this.giveUp);
@@ -73,6 +80,7 @@ export class Room {
     if (!(this.seats[0] && this.seats[1] && this.seats[0].ready && this.seats[1].ready && this.count() === 2)) { this.lobby(); return; }
     const sim = createSim(), G = sim.G;
     this.sim = sim;
+    this.result = null;
     G.online = true; G.myType = this.seats[0].type; G.foeType = this.seats[1].type;
     sim.newGame(false, 'reg');
     for (const s of this.seats) { s.ready = false; s.ack = 0; s.pendingFx=[]; s.sock.send(JSON.stringify({ t: 'go', seat: s.i })); }
@@ -104,8 +112,11 @@ export class Room {
     });
     if (G.phase === 'over') {
       const ending = JSON.stringify({t:'over',score:G.score.slice(),stats:G.stats});
+      this.result = ending;
+      this.players = this.seats.filter(Boolean).map(s => s.k);
       this.each(s => s.sock.send(ending));
       this.stop();
+      this.maybeStart(); // 結算前就按了再來一場的情況
     }
   }
   stop() { clearInterval(this.timer); this.timer = null; clearTimeout(this.giveUp); this.sim = null; for (let i = 0; i < 2; i++) if (this.seats[i] && !this.seats[i].sock) this.seats[i] = null; }

@@ -96,6 +96,7 @@ body{font-family:var(--tc);-webkit-user-select:none;user-select:none;-webkit-tou
 .seg small{display:block;margin-top:2px;font-size:11px;font-weight:500}
 .seg button[aria-pressed="true"]{background:var(--chalk);color:var(--night)}
 #go{min-height:56px;border:0;border-radius:4px;background:var(--you);color:var(--night);font:900 26px/1 var(--tc);letter-spacing:.14em}
+#again{margin:0;padding:8px 10px;background:var(--rival);border-radius:4px;font-size:15px;font-weight:900;text-align:center}
 .how{margin:0;font-size:13px;line-height:1.55;font-weight:500}
 .how b{font-weight:900;color:var(--you)}
 #host{min-height:56px;border:0;border-radius:4px;background:var(--rival);color:var(--chalk);font:900 22px/1 var(--tc);letter-spacing:.06em}
@@ -148,6 +149,7 @@ body{font-family:var(--tc);-webkit-user-select:none;user-select:none;-webkit-tou
       </div>
       <div class="foot">
         <p id="result" hidden></p>
+        <p id="again" role="status" hidden></p>
         <fieldset id="kind" class="seg">
           <legend>你打哪種球員</legend>
           <button type="button" id="tpShoot" data-tp="shoot" aria-pressed="false">射手<small>綠區大，絕招神準</small></button>
@@ -1430,7 +1432,7 @@ function startGame(){
   setTimeout(()=>hint('foe','對手今天打'+TP[G.p[1].type].n+'。絕招鍵集滿能量就能放。',3),600);
   try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}
 }
-const Net={on:false,live:false,ws:null,seat:-1,room:'',ready:false,tap:null,log:[],seq:0,cur:null,sendT:0,rtt:90,jitter:0,lastStateAt:0,paused:false,waitPeer:false,stalled:false,tries:0,afterGame(){},pressReady(){},frame(d){return advance(d)}};
+const Net={on:false,live:false,ws:null,seat:-1,room:'',ready:false,tap:null,log:[],seq:0,cur:null,sendT:0,rtt:90,jitter:0,lastStateAt:0,lastRx:0,n:0,paused:false,waitPeer:false,stalled:false,tries:0,afterGame(){},pressReady(){},frame(d){return advance(d)}};
 if(window.__ONLINE){
   const ALPHA='ABCDEFGHJKMNPQRSTUVWXYZ23456789',lobby=$('#lobby'),lobState=$('#lobState');
   const token=(()=>{let t;try{t=sessionStorage.getItem('dh-tok')}catch(e){}if(!t){t=Math.random().toString(36).slice(2,12);try{sessionStorage.setItem('dh-tok',t)}catch(e){}}return t})();
@@ -1440,17 +1442,29 @@ if(window.__ONLINE){
   function drawQR(){const q=qrcode(0,'M');q.addData(link());q.make();$('#qr').innerHTML=q.createSvgTag({scalable:true,margin:0});$('#lobCode').textContent=Net.room}
   function connect(){
     const ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws/'+Net.room);Net.ws=ws;
-    ws.onopen=()=>{Net.tries=0;send({t:'j',k:token,y:G.myType});if(Net.ready)send({t:'r',y:G.myType});if(Net.live)hintNow('網路已重新連上，等待對戰狀態同步')};
-    ws.onmessage=e=>onMsg(JSON.parse(e.data));
+    ws.onopen=()=>{Net.tries=0;Net.lastRx=Date.now();send({t:'j',k:token,y:G.myType});if(Net.ready)send({t:'r',y:G.myType});if(Net.live)hintNow('網路已重新連上，等待對戰狀態同步')};
+    ws.onmessage=e=>{Net.lastRx=Date.now();onMsg(JSON.parse(e.data))};
     ws.onclose=()=>{if(!Net.on||Net.ws!==ws)return;Net.paused=Net.live;Net.stalled=Net.live;Net.log=[];Net.cur=null;if(++Net.tries>30){say('連線中斷了，請重新開房');return}if(Net.live)hintNow('連線中斷，重新連線中');else say('連線中，請稍等');setTimeout(connect,1000)};
   }
+  // 手機關螢幕後連線可能已死但瀏覽器還回報開著，所以看「多久沒收到訊息」來判斷。
+  function revive(){
+    const w=Net.ws;Net.ws=null;Net.paused=Net.live;Net.stalled=Net.live;Net.log=[];Net.cur=null;
+    try{w&&w.close()}catch(e){}
+    Net.tries=0;connect();
+  }
+  function watch(limit){
+    if(!Net.on||!Net.room||!(Net.live||Net.ready||G.finale))return;
+    if(!Net.ws||Net.ws.readyState>1){if(Net.tries>30||!Net.ws)revive();return}
+    if(Net.ws.readyState===1&&Date.now()-Net.lastRx>limit)revive();
+  }
+  function showInvite(){drawQR();$('#qr').hidden=false;$('#copy').hidden=false;$('#copyCode').hidden=false;$('#lobTitle').textContent='掃 QR Code 開打'}
   function hintNow(t){hintEl.textContent=t;hintEl.classList.add('show');clearTimeout(hintT);hintT=setTimeout(()=>hintEl.classList.remove('show'),2800)}
   function go(m){
     Net.seat=m.seat;G.me=m.seat;Inp=INP[m.seat];Inp.x=Inp.z=Inp.mag=0;Inp.a=Inp.b=Inp.c=false;
     G.online=true;G.attract=false;G.quiet=true;G.finale=false;G.p[0].human=G.p[1].human=true;
     dressUp(); // 每一端固定本機黃、對方紅（不依房主席次）
     if(!m.resume){Net.log=[];Net.cur=null;Net.seq=0;Net.sendT=0;G.phase='check';G.score=[0,0]}
-    Net.live=true;Net.ready=false;Net.waitPeer=!!m.resume;Net.paused=!!m.resume;Net.stalled=false;Net.lastStateAt=Date.now();
+    Net.live=true;Net.ready=false;$('#again').hidden=true;Net.waitPeer=!!m.resume;Net.paused=!!m.resume;Net.stalled=false;Net.lastStateAt=Date.now();
     showHud('朋友');startAmb();$('#netPing').hidden=false;
     try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}
   }
@@ -1487,7 +1501,14 @@ if(window.__ONLINE){
         break;
       case'go':G.fx.length=0;go(m);break;
       case'seat':Net.seat=m.seat;break;
-      case'lobby':if(!Net.live){const n=m.n;say(n<2?'等朋友掃 QR 或輸入房號':Net.ready?'等朋友按開打':'朋友來了，按開打')}break;
+      case'lobby':{
+        Net.n=m.n;if(Net.live)break;
+        const n=m.n,ag=$('#again'),ended=G.finale;
+        say(n<2?(ended?'朋友離開了，掃碼重新邀請':'等朋友掃 QR 或輸入房號'):Net.ready?(ended?'等朋友按再來一場':'等朋友按開打'):'朋友來了，按開打');
+        if(ended&&!Net.ready){ag.hidden=!(n<2||m.r>0);ag.textContent=n<2?'朋友離開了，按再來一場可以重新邀請':'朋友想再打一場'}
+        if(ended&&Net.ready&&n<2)showInvite();
+        break;
+      }
       case'wait':Net.waitPeer=true;Net.paused=true;hintNow('對手斷線了，等他回來');break;
       case'back':Net.waitPeer=false;Net.paused=false;Net.lastStateAt=Date.now();hintNow('對手回來了');break;
       case'over':
@@ -1537,7 +1558,11 @@ if(window.__ONLINE){
     }
     return advance(d,()=>{if(Net.cur)Net.cur.n++});
   };
-  setInterval(()=>{if(Net.on)send({t:'p',c:Date.now(),r:Net.rtt})},1000);
+  setInterval(()=>{if(Net.on){send({t:'p',c:Date.now(),r:Net.rtt});watch(3500)}},1000);
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden||!Net.on)return;
+    send({t:'p',c:Date.now(),r:Net.rtt});setTimeout(()=>watch(1300),1400);
+  });
   Net.afterGame=()=>{
     Net.live=false;Net.ready=false;Net.paused=false;
     $('#go').textContent='再來一場';$('#host').hidden=true;$('#joinBox').hidden=true;$('#lv').hidden=true;
@@ -1545,10 +1570,10 @@ if(window.__ONLINE){
   Net.pressReady=()=>{
     Net.ready=true;Inp.tapA=Inp.tapB=Inp.tapC=false;
     if(!Net.ws||Net.ws.readyState>1)connect();
-    else if(Net.ws.readyState===1)send({t:'r',y:G.myType});
-    lobby.hidden=false;$('#lobTitle').textContent='等朋友按開打';
+    else if(Net.ws.readyState===1){if(Date.now()-Net.lastRx>2000)revive();else send({t:'r',y:G.myType})}
+    $('#again').hidden=true;lobby.hidden=false;$('#lobTitle').textContent=G.finale?'等朋友按再來一場':'等朋友按開打';
     $('#qr').hidden=true;$('#copy').hidden=true;$('#copyCode').hidden=true;
-    $('#lobCode').textContent=Net.room;say('房間 '+Net.room+' · 等對方準備');
+    $('#lobCode').textContent=Net.room;say('房間 '+Net.room+' · 等對方準備');if(G.finale&&Net.n<2)showInvite();
   };
   function leave(){Net.on=false;Net.ready=false;try{Net.ws&&Net.ws.close()}catch(e){}location.href=location.origin+'/'}
   $('#lobBack').addEventListener('click',leave);
