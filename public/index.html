@@ -11,7 +11,7 @@
 :root{
   color-scheme:dark;
   --night:#0a1138; --night-2:#141d55; --cobalt:#1f55dc; --coral:#ee5a43;
-  --you:#ffd21f; --rival:#ff3d8b; --chalk:#f8f3e6; --good:#39e58c; --bad:#ff4d3d;
+  --you:#ffd21f; --rival:#ff4d3d; --chalk:#f8f3e6; --good:#39e58c; --bad:#ff4d3d;
   --num:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
   --tc:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
 }
@@ -1070,10 +1070,10 @@ const numTex=n=>canvasTex(256,256,(g)=>{g.font='900 '+(n.length>1?170:210)+'px "
 const NUMS={};for(const k in TP)NUMS[k]=numTex(TP[k].num);
 const BODIES=[
   mkBody({skin:0xc98d62,jersey:0xffc917,trim:0x141b55,shorts:0xffc917,hair:0x15121c,band:0xf8f3e6,shoe:0xf4f1ea,sock:0xf4f1ea,num:'7',numColor:0x141b55}),
-  mkBody({skin:0x7a4a30,jersey:0xf22a7c,trim:0xf8f3e6,shorts:0xf22a7c,hair:0x10121f,cap:true,shoe:0x2ed67f,sock:0x10121f,num:'23',numColor:0xf8f3e6})
+  mkBody({skin:0x7a4a30,jersey:0xff4d3d,trim:0xf8f3e6,shorts:0xff4d3d,hair:0x10121f,cap:true,shoe:0xf8f3e6,sock:0x10121f,num:'23',numColor:0xf8f3e6})
 ];
 function dressUp(){G.p.forEach((p,i)=>{const t=TP[p.type],B=BODIES[i^G.me];B.root.scale.set(t.w,t.h,t.w);B.U.uN.value=NUMS[p.type]})}
-const shadows=[mkBlob(1.5),mkBlob(1.5)],rings=[mkRing(0xffd21f),mkRing(0xff3d8b)],ballShadow=mkBlob(.8);
+const shadows=[mkBlob(1.5),mkBlob(1.5)],rings=[mkRing(0xffd21f),mkRing(0xff4d3d)],ballShadow=mkBlob(.8);
 shadows.forEach(s=>s.material.opacity=.7);
 const ballTex=canvasTex(512,256,(g,w,h)=>{
   g.fillStyle='#e8701c';g.fillRect(0,0,w,h);
@@ -1433,6 +1433,7 @@ if(window.__ONLINE){
   function go(m){
     Net.seat=m.seat;G.me=m.seat;Inp=INP[m.seat];Inp.x=Inp.z=Inp.mag=0;Inp.a=Inp.b=Inp.c=false;
     G.online=true;G.attract=false;G.quiet=true;G.finale=false;G.p[0].human=G.p[1].human=true;
+    dressUp(); // 每一端固定本機黃、對方紅（不依房主席次）
     if(!m.resume){Net.log=[];Net.cur=null;Net.seq=0;Net.sendT=0;G.phase='check';G.score=[0,0]}
     Net.live=true;Net.ready=false;Net.paused=!!m.resume;showHud('朋友');startAmb();
     try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}
