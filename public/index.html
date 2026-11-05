@@ -1713,7 +1713,7 @@ function startGame(){
   setTimeout(()=>hint('foe','對手今天打'+TP[G.p[1].type].n+'。絕招鍵集滿能量就能放。',3),600);
   try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}
 }
-const Net={on:false,live:false,ws:null,seat:-1,room:'',ready:false,tap:null,log:[],seq:0,cur:null,sendT:0,rtt:90,jitter:0,lastStateAt:0,lastRx:0,n:0,paused:false,waitPeer:false,stalled:false,tries:0,afterGame(){},pressReady(){},frame(d){return advance(d)}};
+const Net={on:false,live:false,ws:null,seat:-1,room:'',ready:false,tap:null,log:[],seq:0,cur:null,sendT:0,rtt:90,jitter:0,lastStateAt:0,lastRx:0,n:0,paused:false,waitPeer:false,stalled:false,tries:0,base:null,pend:null,needFull:false,dbg:null,afterGame(){},pressReady(){},frame(d){return advance(d)}};
 if(window.__ONLINE){
   const ALPHA='ABCDEFGHJKMNPQRSTUVWXYZ23456789',lobby=$('#lobby'),lobState=$('#lobState');
   const token=(()=>{let t;try{t=sessionStorage.getItem('dh-tok')}catch(e){}if(!t){t=Math.random().toString(36).slice(2,12);try{sessionStorage.setItem('dh-tok',t)}catch(e){}}return t})();
@@ -1725,11 +1725,11 @@ if(window.__ONLINE){
     const ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws/'+Net.room);Net.ws=ws;
     ws.onopen=()=>{Net.tries=0;Net.lastRx=Date.now();send({t:'j',k:token,y:G.myType});if(Net.ready)send({t:'r',y:G.myType});if(Net.live)hintNow('網路已重新連上，等待對戰狀態同步')};
     ws.onmessage=e=>{Net.lastRx=Date.now();onMsg(JSON.parse(e.data))};
-    ws.onclose=()=>{if(!Net.on||Net.ws!==ws)return;Net.paused=Net.live;Net.stalled=Net.live;Net.log=[];Net.cur=null;if(++Net.tries>30){say('連線中斷了，請重新開房');return}if(Net.live)hintNow('連線中斷，重新連線中');else say('連線中，請稍等');setTimeout(connect,1000)};
+    ws.onclose=()=>{if(!Net.on||Net.ws!==ws)return;Net.paused=Net.live;Net.stalled=Net.live;Net.log=[];Net.cur=null;Net.base=null;Net.pend=null;if(++Net.tries>30){say('連線中斷了，請重新開房');return}if(Net.live)hintNow('連線中斷，重新連線中');else say('連線中，請稍等');setTimeout(connect,1000)};
   }
   // 手機關螢幕後連線可能已死但瀏覽器還回報開著，所以看「多久沒收到訊息」來判斷。
   function revive(){
-    const w=Net.ws;Net.ws=null;Net.paused=Net.live;Net.stalled=Net.live;Net.log=[];Net.cur=null;
+    const w=Net.ws;Net.ws=null;Net.paused=Net.live;Net.stalled=Net.live;Net.log=[];Net.cur=null;Net.base=null;Net.pend=null;
     try{w&&w.close()}catch(e){}
     Net.tries=0;connect();
   }
@@ -1744,32 +1744,77 @@ if(window.__ONLINE){
     Net.seat=m.seat;G.me=m.seat;Inp=INP[m.seat];Inp.x=Inp.z=Inp.mag=0;Inp.a=Inp.b=Inp.c=false;
     G.online=true;G.attract=false;G.quiet=true;G.finale=false;G.p[0].human=G.p[1].human=true;
     dressUp(); // 每一端固定本機黃、對方紅（不依房主席次）
+    Net.base=null;Net.pend=null;Net.needFull=false;
     if(!m.resume){Career.begin();Net.log=[];Net.cur=null;Net.seq=0;Net.sendT=0;G.phase='check';G.score=[0,0]}
     Net.live=true;Net.ready=false;$('#again').hidden=true;Net.waitPeer=!!m.resume;Net.paused=!!m.resume;Net.stalled=false;Net.lastStateAt=Date.now();
     showHud('朋友');startAmb();$('#netPing').hidden=false;
     try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}
   }
+  // ---- 狀態同步：差量快照 → 合併成基準狀態 → 每個畫面幀最多還原一次 ----
+  const patchArr=(a,d)=>{for(let i=0;i<d.length;i+=2)a[d[i]]=d[i+1]};
+  function absorb(m){
+    if(m.f&&m.st){Net.base=m.st;Net.needFull=false}
+    else if(Net.base&&m.d){
+      const d=m.d,B=Net.base;
+      if(d.g)patchArr(B.g,d.g);
+      if(d.b)patchArr(B.b,d.b);
+      if(d.p)d.p.forEach((x,i)=>{if(x)patchArr(B.p[i][0],x)});
+      if(d.o)for(let i=0;i<d.o.length;i+=3)B.p[d.o[i]][d.o[i+1]]=d.o[i+2];
+    }else{
+      // 沒有基準狀態（例如剛重連）：要求伺服器補送完整快照，之前飛行中的差量一律丟掉
+      Net.base=null;if(!Net.needFull){Net.needFull=true;send({t:'rs'})}
+      return;
+    }
+    const q=Net.pend,fx=m.fx||[];
+    // 網路卡住後一次湧進好幾份快照：只還原最新那份，事件（得分、音效…）全部保留
+    if(q){q.a=m.a;q.k=m.k;q.fx=q.fx.concat(fx).slice(-200);q.n++}else Net.pend={a:m.a,k:m.k,fx,n:1};
+  }
+  function stateOf(){
+    const B=Net.base,cp=v=>v&&typeof v==='object'?JSON.parse(JSON.stringify(v)):v; // 物件欄位要複製，免得被本機模擬原地改到
+    return{g:B.g.map(cp),b:B.b,p:B.p.map(r=>[r[0],cp(r[1]),cp(r[2]),cp(r[3]),cp(r[4])])};
+  }
+  const REPLAY_MAX=170; // 最多補播 ~1.4 秒的指令
+  // 校正量不直接瞬間跳過去：渲染位置維持連續，差距存進 ex/ez，之後在 view() 逐漸消掉
+  function carry(p,was,own){
+    const dx=was[0]-p.x,dz=was[1]-p.z;
+    if(hyp(dx,dz)>=2.2){p.ex=p.ez=0;return hyp(dx,dz)}
+    let ex=was[2]+dx,ez=was[3]+dz;const l=hyp(ex,ez),cap=own?.9:1.2;
+    if(l>cap){ex*=cap/l;ez*=cap/l}
+    p.ex=ex;p.ez=ez;return hyp(dx,dz);
+  }
   function reconcile(m){
-    const mine=G.p[G.me],foe=G.p[1-G.me],b=G.ball,was=G.p.map(p=>[p.x,p.z]),bw=[b.x,b.y,b.z],live=Inp,keep={...live};
-    S.restore(m.st);
-    const fi=INP[1-G.me];fi.x=foe.ix;fi.z=foe.iz;fi.mag=foe.mag;fi.a=fi.b=fi.c=false;
-    Net.log=Net.log.filter(e=>e.s>m.a);
-    // 網速變慢時回放更多未確認輸入，避免將預測位置直接重置成較舊快照。
-    let budget=Math.max(48,Math.min(84,Math.ceil((Net.rtt+Net.jitter*1.5+110)/1000/H)));
+    const me=G.me,foe=G.p[1-me],b=G.ball,was=G.p.map(p=>[p.x,p.z,p.ex||0,p.ez||0]),bw=[b.x,b.y,b.z],bo=[b.ex||0,b.ey||0,b.ez||0],wasHeld=b.mode==='held'&&!!G.holder,live=Inp,keep={...live};
+    S.restore(stateOf());
+    const fi=INP[1-me];fi.x=foe.ix;fi.z=foe.iz;fi.mag=foe.mag;fi.a=fi.b=fi.c=false;
+    // 伺服器已用「確認序號 m.a」那筆指令推進了 m.k 步：只補播它剩下的部分，再補播之後所有指令。
+    Net.log=Net.log.filter(e=>e.s>=m.a);
+    let budget=REPLAY_MAX,steps=0;const t0=performance.now();
     for(const e of Net.log){
-      live.x=e.x;live.z=e.z;live.mag=e.m;live.a=e.a;live.b=e.b;live.c=e.c;live.tapA=e.ta;live.tapB=e.tb;live.tapC=e.tc;
-      for(let i=0;i<e.n&&budget>0&&G.phase!=='over';i++,budget--)step(H);
+      const acked=e.s===m.a;
+      let n=acked?(m.k===undefined?0:Math.max(0,e.n-m.k)):e.n;
+      if(n<=0)continue;
+      live.x=e.x;live.z=e.z;live.mag=e.m;live.a=e.a;live.b=e.b;live.c=e.c;
+      const tap=!acked||!m.k; // 確認的那筆如果伺服器還沒執行過第一步，點按旗標也還沒被吃掉
+      live.tapA=tap&&e.ta;live.tapB=tap&&e.tb;live.tapC=tap&&e.tc;
+      for(;n>0&&budget>0&&G.phase!=='over';n--,budget--,steps++){
+        step(H);
+        if((steps&15)===15&&performance.now()-t0>9){budget=0}
+      }
     }
     Object.assign(live,keep);
-    G.p.forEach((p,i)=>{const dx=was[i][0]-p.x,dz=was[i][1]-p.z;
-      if(hyp(dx,dz)<2.2){p.ex=clamp((p.ex||0)*.5+dx*.7,-.75,.75);p.ez=clamp((p.ez||0)*.5+dz*.7,-.75,.75)}
-      else{p.ex=p.ez=0}
-    });
-    const ex=bw[0]-b.x,ey=bw[1]-b.y,ez=bw[2]-b.z;
-    if(hyp(ex,ey,ez)<1.6){b.ex=clamp((b.ex||0)*.5+ex*.7,-.9,.9);b.ey=clamp((b.ey||0)*.5+ey*.7,-.9,.9);b.ez=clamp((b.ez||0)*.5+ez*.7,-.9,.9)}
-    else{b.ex=b.ey=b.ez=0}
+    const dm=carry(G.p[me],was[me],true),df=carry(foe,was[1-me],false);
+    const held=b.mode==='held'&&!!G.holder;
+    if(held||wasHeld){b.ex=b.ey=b.ez=0} // 持球時球由 view() 綁在持球者平滑後的手上
+    else{
+      const ex=bw[0]-b.x,ey=bw[1]-b.y,ez=bw[2]-b.z;
+      if(hyp(ex,ey,ez)<1.6){
+        let X=bo[0]+ex,Y=bo[1]+ey,Z=bo[2]+ez;const l=hyp(X,Y,Z);if(l>1.2){X*=1.2/l;Y*=1.2/l;Z*=1.2/l}
+        b.ex=X;b.ey=Y;b.ez=Z;
+      }else{b.ex=b.ey=b.ez=0}
+    }
     for(const f of m.fx){if(f[0]==='over'&&f[1].stats)G.stats=f[1].stats;G.fx.push(f)}
     if(m.fx.some(f=>f[0]==='types'))dressUp();
+    if(Net.dbg)Net.dbg({dm,df,steps,left:budget<=0,n:m.n,db:hyp(bw[0]-b.x,bw[1]-b.y,bw[2]-b.z)});
   }
   function onMsg(m){
     switch(m.t){
@@ -1777,7 +1822,7 @@ if(window.__ONLINE){
         if(Net.live){
           Net.lastStateAt=Date.now();Net.stalled=false;
           if(!Net.waitPeer)Net.paused=false;
-          reconcile(m);
+          absorb(m);
         }
         break;
       case'go':G.fx.length=0;go(m);break;
@@ -1793,7 +1838,7 @@ if(window.__ONLINE){
       case'wait':Net.waitPeer=true;Net.paused=true;hintNow('對手斷線了，等他回來');break;
       case'back':Net.waitPeer=false;Net.paused=false;Net.lastStateAt=Date.now();hintNow('對手回來了');break;
       case'over':
-        Net.live=false;Net.paused=false;
+        Net.live=false;Net.paused=false;Net.pend=null;Net.base=null;
         if(Array.isArray(m.score)&&m.score.length===2)G.score=m.score;
         if(m.stats)G.stats=m.stats;
         G.phase='over';
@@ -1813,11 +1858,16 @@ if(window.__ONLINE){
       }
     }
   }
+  // 指令只在「有變化」時才送；沒變化時伺服器本來就會一直沿用，不必每 25ms 重複送。
+  // 送出前先量化成伺服器會收到的值（兩位小數、超過 1 就正規化），本機預測、回放、伺服器三邊用同一組數字。
   function flush(){
     if(!Net.ws||Net.ws.readyState!==1||Net.ws.bufferedAmount>32768)return false;
-    const t=Net.tap,c={s:++Net.seq,x:Inp.x,z:Inp.z,m:Inp.mag,a:Inp.a,b:Inp.b,c:Inp.c,ta:!!t.a,tb:!!t.b,tc:!!t.c,n:0};
+    const t=Net.tap,r2=v=>Math.round(v*100)/100,sx=r2(Inp.x),sz=r2(Inp.z),sm=Math.min(1,Math.max(0,r2(Inp.mag)));
+    let x=sx,z=sz;const len=Math.hypot(x,z);if(len>1){x/=len;z/=len}
+    const pn=Net.cur?Net.cur.n:0; // 上一筆指令實際跑了幾步：伺服器照這個步數執行，抖動才不會改變每筆指令的長度
+    const c={s:++Net.seq,x,z,m:sm,a:Inp.a,b:Inp.b,c:Inp.c,ta:!!t.a,tb:!!t.b,tc:!!t.c,n:0,sx,sz};
     t.a=t.b=t.c=false;Net.cur=c;Net.log.push(c);if(Net.log.length>96)Net.log.shift();
-    send({t:'i',s:c.s,x:+c.x.toFixed(2),z:+c.z.toFixed(2),m:+c.m.toFixed(2),a:c.a,b:c.b,c:c.c,ta:c.ta,tb:c.tb,tc:c.tc});
+    send({t:'i',s:c.s,pn,x:sx,z:sz,m:sm,a:c.a,b:c.b,c:c.c,ta:c.ta,tb:c.tb,tc:c.tc});
     return true;
   }
   Net.tap={};
@@ -1828,16 +1878,23 @@ if(window.__ONLINE){
       if(!Net.stalled){Net.stalled=true;hintNow('連線延遲，等待最新球場狀態');}
       Net.paused=true;return 1;
     }
+    if(Net.pend){const q=Net.pend;Net.pend=null;reconcile(q)}
     Net.sendT+=d;
     const last=Net.cur,inp=Inp;
-    const inputChanged=!last||Math.abs(inp.x-last.x)>.13||Math.abs(inp.z-last.z)>.13||Math.abs(inp.mag-last.m)>.2||
-      inp.a!==last.a||inp.b!==last.b||inp.c!==last.c;
+    const flagChg=!last||inp.a!==last.a||inp.b!==last.b||inp.c!==last.c;
+    const bigChg=!last||Math.abs(inp.x-last.sx)>.13||Math.abs(inp.z-last.sz)>.13||Math.abs(inp.mag-last.m)>.2;
+    const smallChg=!last||Math.abs(inp.x-last.sx)>.03||Math.abs(inp.z-last.sz)>.03||Math.abs(inp.mag-last.m)>.05;
     const pressed=Net.tap.a||Net.tap.b||Net.tap.c;
     // 在本機物理推進前送出最新輸入，讓伺服器確認序號與本機預測對得上。
-    if(!last||Net.sendT>=.025||(inputChanged&&Net.sendT>=.014)||(pressed&&Net.sendT>=.008)){
+    if(!last||((pressed||flagChg)&&Net.sendT>=.008)||(bigChg&&Net.sendT>=.014)||(smallChg&&Net.sendT>=.04)){
       if(flush())Net.sendT=0;
     }
-    return advance(d,()=>{if(Net.cur)Net.cur.n++});
+    // 本機推進一律用「已送出的那筆指令」，這樣預測、回放、伺服器的結果才會一致
+    const raw={x:inp.x,z:inp.z,mag:inp.mag,a:inp.a,b:inp.b,c:inp.c},cur=Net.cur;
+    if(cur){inp.x=cur.x;inp.z=cur.z;inp.mag=cur.m;inp.a=cur.a;inp.b=cur.b;inp.c=cur.c}
+    const ts=advance(d,()=>{if(Net.cur)Net.cur.n++});
+    if(cur)Object.assign(inp,raw);
+    return ts;
   };
   setInterval(()=>{if(Net.on){send({t:'p',c:Date.now(),r:Net.rtt});watch(3500)}},1000);
   document.addEventListener('visibilitychange',()=>{
@@ -1940,6 +1997,7 @@ function resize(){
 }
 new ResizeObserver(resize).observe(stage);resize();
 const camFocus=new THREE.Vector3(0,1,6),camTarget=new THREE.Vector3(),tmp=new THREE.Vector3();
+let rbHeld=false,camFirstBall=true;const rb=[0,0,0],rr=[0,0,0];
 let zoom=1,camFirst=true,lastHandleLabel='',lastB='',lastAdis=null,lastClock=-1,lastDribSign=0,frames=0,fpsT=0;
 function setBtn(el,t,dim){if(el._t!==t){el.textContent=t;el._t=t}el.classList.toggle('dim',!!dim)}
 function view(dtR,dtS){
@@ -1957,27 +2015,47 @@ function view(dtR,dtS){
   if(G.shake>.02){cam.position.x+=rnd(-1,1)*G.shake*.22;cam.position.y+=rnd(-1,1)*G.shake*.22}
   cam.lookAt(camFocus);
   if(G.camT>0)G.camT-=dtR;
-  // 角色
+  // 角色與球：身體、雙手 IK、球全部用同一組「平滑後」座標來畫（身體 +ex/ez；持球時球釘在持球者平滑後的手上），不會各飄各的
+  const b=G.ball,hb=b.mode==='held'?G.holder:null;
+  const sv=[];
   for(let i=0;i<2;i++){
-    const p=G.p[i],vi=i^vm,r=BODIES[vi],dk=Math.exp(-13*dtR);p.ex=(p.ex||0)*dk;p.ez=(p.ez||0)*dk;
+    // 校正量逐漸消掉：指數衰減，但每秒最多挪 4 m/s（自己）/ 3.2 m/s（對手），不會看起來像突然衝刺
+    const p=G.p[i],own=i===vm,rx=p.ex||0,rz=p.ez||0,off=hyp(rx,rz);
+    if(off>1e-4){const k=1-Math.exp(-(own?8+8*Math.min(off,1):5+8*Math.min(off,1))*dtR),f=1-Math.min(off*k,(own?4:3.2)*dtR)/off;p.ex=rx*f;p.ez=rz*f}else{p.ex=p.ez=0}
+    sv.push(p.x,p.z,p.ex,p.ez);
+  }
+  let bx,by,bz;
+  if(hb){const q=ballPos(hb);bx=q.x+hb.ex;by=q.y;bz=q.z+hb.ez;b.ex=b.ey=b.ez=0}
+  else{const bd=Math.exp(-13*dtR);b.ex=(b.ex||0)*bd;b.ey=(b.ey||0)*bd;b.ez=(b.ez||0)*bd;bx=b.x+b.ex;by=b.y+b.ey;bz=b.z+b.ez}
+  // 持球 / 離手交接時，渲染位置保持連續（殘差很快消掉）
+  if(!!hb!==rbHeld){rbHeld=!!hb;const dx=rb[0]-bx,dy=rb[1]-by,dz=rb[2]-bz;if(!camFirstBall&&hyp(dx,dy,dz)<1.5){rr[0]=dx;rr[1]=dy;rr[2]=dz}else rr[0]=rr[1]=rr[2]=0}
+  camFirstBall=false;const rk=Math.exp(-16*dtR);rr[0]*=rk;rr[1]*=rk;rr[2]*=rk;
+  bx+=rr[0];by+=rr[1];bz+=rr[2];rb[0]=bx;rb[1]=by;rb[2]=bz;
+  const bsv=[b.x,b.y,b.z];
+  for(let i=0;i<2;i++){const p=G.p[i];p.x+=p.ex;p.z+=p.ez;p.ex=p.ez=0}
+  b.x=bx;b.y=by;b.z=bz;
+  for(let i=0;i<2;i++){
+    const p=G.p[i],vi=i^vm,r=BODIES[vi];
     updBody(r,p,dtS,dtR);
-    const px=p.x+p.ex,pz=p.z+p.ez;shadows[vi].position.x=px;shadows[vi].position.z=pz;const sc=clamp(1-p.y*.3,.45,1);shadows[vi].scale.set(sc,sc,1);
-    rings[vi].position.x=px;rings[vi].position.z=pz;rings[vi].visible=p.s!=='fall';
+    shadows[vi].position.x=p.x;shadows[vi].position.z=p.z;const sc=clamp(1-p.y*.3,.45,1);shadows[vi].scale.set(sc,sc,1);
+    rings[vi].position.x=p.x;rings[vi].position.z=p.z;rings[vi].visible=p.s!=='fall';
     if(p.skid>.4&&Math.random()<.5)puff(p.x,.08,p.z,1,.5);
   }
+  for(let i=0;i<2;i++){const p=G.p[i];p.x=sv[i*4];p.z=sv[i*4+1];p.ex=sv[i*4+2];p.ez=sv[i*4+3]}
+  b.x=bsv[0];b.y=bsv[1];b.z=bsv[2];
   // 自己的重心圈：越紅越危險
   const bal=clamp(p0.bal/100,0,1);rings[0].material.color.setRGB(1,lerp(.82,.2,bal),lerp(.12,.15,bal));
   const pulse=1+(p0.pend?.18*Math.sin(G.t*40):0);rings[0].scale.set(pulse,pulse,1);
   rings[1].material.opacity=p1.pend?1:.75;
   // 防守方向箭頭
   if(p0.human&&p0.pend){
-    const q=p0.pend;arrow.visible=true;arrow.position.x=p0.x+q.D.x*1.25;arrow.position.z=p0.z+q.D.z*1.25;
+    const q=p0.pend;arrow.visible=true;arrow.position.x=p0.x+(p0.ex||0)+q.D.x*1.25;arrow.position.z=p0.z+(p0.ez||0)+q.D.z*1.25;
     arrow.rotation.set(-PI/2,0,0);arrow.rotation.y=0;arrow.rotation.order='YXZ';arrow.rotation.y=Math.atan2(q.D.x,q.D.z);arrow.material.opacity=1-q.t/q.win*.6;
   }else arrow.visible=false;
   // 球
-  const b=G.ball,bd=Math.exp(-13*dtR);b.ex=(b.ex||0)*bd;b.ey=(b.ey||0)*bd;b.ez=(b.ez||0)*bd;ballM.position.set(b.x+b.ex,b.y+b.ey,b.z+b.ez);
+  ballM.position.set(bx,by,bz);
   if(b.mode==='held'){ballM.rotation.x+=dtS*9}else{ballM.rotation.x+=(b.spin||-6)*dtS;}
-  ballShadow.position.x=b.x;ballShadow.position.z=b.z;const bs=clamp(1-b.y*.15,.45,1);ballShadow.scale.set(bs,bs,1);
+  ballShadow.position.x=bx;ballShadow.position.z=bz;const bs=clamp(1-by*.15,.45,1);ballShadow.scale.set(bs,bs,1);
   if(G.holder&&G.holder.s==='free'){const s=Math.sign(Math.cos(G.holder.drib));if(s!==lastDribSign){if(lastDribSign!==0&&Math.abs(Math.sin(G.holder.drib))<.3&&!G.attract)SFX.thud(.05);lastDribSign=s}}
   // 籃框
   rimG.rotation.x=G.rimKick*.3*(G.rimKick>.5?1:Math.sin(G.t*40));
