@@ -2,7 +2,7 @@
 import { createSim } from './sim.js';
 
 const TICK_MS = 16;
-const SNAP_S = 0.05;
+const SNAP_S = 1 / 15; // 15Hz server snapshots, local client still predicts motion
 const clampNumber = (v, min, max) => Number.isFinite(v) ? Math.max(min, Math.min(max, v)) : 0;
 const playerType = v => v === 'shoot' || v === 'slash' || v === 'wall' ? v : 'slash';
 
@@ -75,7 +75,7 @@ export class Room {
     G.online = true; G.myType = this.seats[0].type; G.foeType = this.seats[1].type;
     sim.newGame(false, 'reg');
     for (const s of this.seats) { s.ready = false; s.ack = 0; s.sock.send(JSON.stringify({ t: 'go', seat: s.i })); }
-    this.last = Date.now(); this.snapT = 0; this.paused = false;
+    this.last = Date.now(); this.snapT = SNAP_S; this.paused = false;
     this.timer = setInterval(() => this.tick(), TICK_MS);
   }
   tick() {
@@ -91,7 +91,11 @@ export class Room {
     for (const f of fx) if (f[0] === 'over') f[1].stats = G.stats;
     const body = JSON.stringify({ st: this.sim.snap(), fx });
     this.each(s => s.sock.send(`{"t":"s","a":${s.ack},` + body.slice(1)));
-    if (G.phase === 'over') { this.each(s => s.sock.send('{"t":"over"}')); this.stop(); }
+    if (G.phase === 'over') {
+      const ending = JSON.stringify({t:'over',score:G.score.slice(),stats:G.stats});
+      this.each(s => s.sock.send(ending));
+      this.stop();
+    }
   }
   stop() { clearInterval(this.timer); this.timer = null; clearTimeout(this.giveUp); this.sim = null; for (let i = 0; i < 2; i++) if (this.seats[i] && !this.seats[i].sock) this.seats[i] = null; }
 }
