@@ -40,6 +40,8 @@ body{font-family:var(--tc);-webkit-user-select:none;user-select:none;-webkit-tou
 #clockBox{display:grid;place-items:center;min-width:58px;padding:0 8px;background:var(--chalk);color:var(--night);border-radius:4px}
 #clock{font:900 34px/1 var(--num);font-variant-numeric:tabular-nums}
 #clockBox.low{background:var(--bad);color:var(--chalk)}
+#netPing{position:absolute;top:calc(env(safe-area-inset-top,0px) + 65px);right:max(58px,calc(env(safe-area-inset-right,0px) + 58px));padding:3px 7px;border-radius:3px;background:rgba(10,17,56,.75);color:var(--chalk);font:700 11px/1.2 var(--num);font-variant-numeric:tabular-nums;pointer-events:none}
+#netPing.warn{color:var(--you)}
 #mute{position:absolute;pointer-events:auto;top:calc(env(safe-area-inset-top,0px) + 60px);right:max(16px,env(safe-area-inset-right,0px));width:34px;height:34px;display:grid;place-items:center;padding:0;border:0;border-radius:4px;background:rgba(10,17,56,.72);color:var(--chalk);font:700 12px var(--tc)}
 #hint{position:absolute;top:calc(env(safe-area-inset-top,0px) + 62px);left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 112px);padding:6px 12px;background:rgba(10,17,56,.82);border-radius:4px;font-size:13px;font-weight:700;line-height:1.35;text-align:center;text-wrap:balance;opacity:0;transition:opacity .2s}
 #hint.show{opacity:1}
@@ -127,6 +129,7 @@ body{font-family:var(--tc);-webkit-user-select:none;user-select:none;-webkit-tou
         <div class="side rival" id="sideRival"><b id="s1">0</b><span id="rivalName">系隊學長</span><i></i></div>
       </header>
       <button id="mute" type="button" aria-label="關閉聲音">音</button>
+      <div id="netPing" hidden aria-label="網路延遲"></div>
       <div id="hint"></div>
       <div id="joyZone"><div id="joyBase"><div id="joyKnob"></div></div></div>
       <div id="btns">
@@ -891,7 +894,7 @@ const scene=new THREE.Scene();scene.background=new THREE.Color(0x0a1138);
 const FOV=44,cam=new THREE.PerspectiveCamera(FOV,.5,.5,150);
 scene.add(new THREE.HemisphereLight(0xdfe6ff,0x35407f,.82));
 const sun=new THREE.DirectionalLight(0xfff0d4,1.25);sun.position.set(-5,15,12);sun.target.position.set(0,0,6);scene.add(sun,sun.target);
-sun.castShadow=true;sun.shadow.mapSize.set(768,768);Object.assign(sun.shadow.camera,{left:-11,right:11,top:11,bottom:-11,near:2,far:40});sun.shadow.bias=-.0012;sun.shadow.normalBias=.02;
+sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-11,right:11,top:11,bottom:-11,near:2,far:40});sun.shadow.bias=-.0012;sun.shadow.normalBias=.02;
 const rimLight=new THREE.DirectionalLight(0x9fc0ff,.75);rimLight.position.set(4,6,-10);scene.add(rimLight);
 const canvasTex=(w,h,draw)=>{const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=Math.min(8,R.capabilities.getMaxAnisotropy());return t};
 
@@ -1415,7 +1418,7 @@ function startGame(){
   setTimeout(()=>hint('foe','對手今天打'+TP[G.p[1].type].n+'。絕招鍵集滿能量就能放。',3),600);
   try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}
 }
-const Net={on:false,live:false,ws:null,seat:-1,room:'',ready:false,tap:null,log:[],seq:0,cur:null,sendT:0,rtt:90,paused:false,tries:0,afterGame(){},pressReady(){},frame(d){return advance(d)}};
+const Net={on:false,live:false,ws:null,seat:-1,room:'',ready:false,tap:null,log:[],seq:0,cur:null,sendT:0,rtt:90,jitter:0,lastStateAt:0,paused:false,waitPeer:false,stalled:false,tries:0,afterGame(){},pressReady(){},frame(d){return advance(d)}};
 if(window.__ONLINE){
   const ALPHA='ABCDEFGHJKMNPQRSTUVWXYZ23456789',lobby=$('#lobby'),lobState=$('#lobState');
   const token=(()=>{let t;try{t=sessionStorage.getItem('dh-tok')}catch(e){}if(!t){t=Math.random().toString(36).slice(2,12);try{sessionStorage.setItem('dh-tok',t)}catch(e){}}return t})();
@@ -1427,7 +1430,7 @@ if(window.__ONLINE){
     const ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws/'+Net.room);Net.ws=ws;
     ws.onopen=()=>{Net.tries=0;send({t:'j',k:token,y:G.myType});if(Net.ready)send({t:'r',y:G.myType});if(Net.live)hintNow('網路已重新連上，等待對戰狀態同步')};
     ws.onmessage=e=>onMsg(JSON.parse(e.data));
-    ws.onclose=()=>{if(!Net.on||Net.ws!==ws)return;Net.paused=Net.live;Net.log=[];Net.cur=null;if(++Net.tries>30){say('連線中斷了，請重新開房');return}if(Net.live)hintNow('連線中斷，重新連線中');else say('連線中，請稍等');setTimeout(connect,1000)};
+    ws.onclose=()=>{if(!Net.on||Net.ws!==ws)return;Net.paused=Net.live;Net.stalled=Net.live;Net.log=[];Net.cur=null;if(++Net.tries>30){say('連線中斷了，請重新開房');return}if(Net.live)hintNow('連線中斷，重新連線中');else say('連線中，請稍等');setTimeout(connect,1000)};
   }
   function hintNow(t){hintEl.textContent=t;hintEl.classList.add('show');clearTimeout(hintT);hintT=setTimeout(()=>hintEl.classList.remove('show'),2800)}
   function go(m){
@@ -1435,7 +1438,8 @@ if(window.__ONLINE){
     G.online=true;G.attract=false;G.quiet=true;G.finale=false;G.p[0].human=G.p[1].human=true;
     dressUp(); // 每一端固定本機黃、對方紅（不依房主席次）
     if(!m.resume){Net.log=[];Net.cur=null;Net.seq=0;Net.sendT=0;G.phase='check';G.score=[0,0]}
-    Net.live=true;Net.ready=false;Net.paused=!!m.resume;showHud('朋友');startAmb();
+    Net.live=true;Net.ready=false;Net.waitPeer=!!m.resume;Net.paused=!!m.resume;Net.stalled=false;Net.lastStateAt=Date.now();
+    showHud('朋友');startAmb();$('#netPing').hidden=false;
     try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}
   }
   function reconcile(m){
@@ -1443,7 +1447,8 @@ if(window.__ONLINE){
     S.restore(m.st);
     const fi=INP[1-G.me];fi.x=foe.ix;fi.z=foe.iz;fi.mag=foe.mag;fi.a=fi.b=fi.c=false;
     Net.log=Net.log.filter(e=>e.s>m.a);
-    let budget=48;
+    // 網速變慢時回放更多未確認輸入，避免將預測位置直接重置成較舊快照。
+    let budget=Math.max(48,Math.min(144,Math.ceil((Net.rtt+Net.jitter*1.5+110)/1000/H)));
     for(const e of Net.log){
       live.x=e.x;live.z=e.z;live.mag=e.m;live.a=e.a;live.b=e.b;live.c=e.c;live.tapA=e.ta;live.tapB=e.tb;live.tapC=e.tc;
       for(let i=0;i<e.n&&budget>0&&G.phase!=='over';i++,budget--)step(H);
@@ -1460,12 +1465,18 @@ if(window.__ONLINE){
   }
   function onMsg(m){
     switch(m.t){
-      case's':if(Net.live)reconcile(m);break;
+      case's':
+        if(Net.live){
+          Net.lastStateAt=Date.now();Net.stalled=false;
+          if(!Net.waitPeer)Net.paused=false;
+          reconcile(m);
+        }
+        break;
       case'go':G.fx.length=0;go(m);break;
       case'seat':Net.seat=m.seat;break;
       case'lobby':if(!Net.live){const n=m.n;say(n<2?'等朋友掃 QR 或輸入房號':Net.ready?'等朋友按開打':'朋友來了，按開打')}break;
-      case'wait':Net.paused=true;hintNow('對手斷線了，等他回來');break;
-      case'back':Net.paused=false;hintNow('對手回來了');break;
+      case'wait':Net.waitPeer=true;Net.paused=true;hintNow('對手斷線了，等他回來');break;
+      case'back':Net.waitPeer=false;Net.paused=false;Net.lastStateAt=Date.now();hintNow('對手回來了');break;
       case'over':
         Net.live=false;Net.paused=false;
         if(Array.isArray(m.score)&&m.score.length===2)G.score=m.score;
@@ -1474,25 +1485,44 @@ if(window.__ONLINE){
         if(!G.finale)gameOver();
         break;
       case'full':say('這個房間已經滿了');Net.on=false;break;
-      case'q':Net.rtt=Date.now()-m.c;break;
+      case'q':{
+        const sample=Date.now()-m.c;
+        if(Number.isFinite(sample)&&sample>=0&&sample<3000){
+          Net.jitter=.8*Net.jitter+.2*Math.abs(sample-Net.rtt);
+          Net.rtt=.8*Net.rtt+.2*sample;
+          const label=$('#netPing');label.hidden=!Net.live;
+          label.textContent=Math.round(Net.rtt)+'ms';
+          label.classList.toggle('warn',Net.rtt>160||Net.jitter>65);
+        }
+        break;
+      }
     }
   }
   function flush(){
-    if(!Net.ws||Net.ws.readyState!==1||Net.ws.bufferedAmount>32768)return;
+    if(!Net.ws||Net.ws.readyState!==1||Net.ws.bufferedAmount>32768)return false;
     const t=Net.tap,c={s:++Net.seq,x:Inp.x,z:Inp.z,m:Inp.mag,a:Inp.a,b:Inp.b,c:Inp.c,ta:!!t.a,tb:!!t.b,tc:!!t.c,n:0};
-    t.a=t.b=t.c=false;Net.cur=c;Net.log.push(c);if(Net.log.length>64)Net.log.shift();
+    t.a=t.b=t.c=false;Net.cur=c;Net.log.push(c);if(Net.log.length>96)Net.log.shift();
     send({t:'i',s:c.s,x:+c.x.toFixed(2),z:+c.z.toFixed(2),m:+c.m.toFixed(2),a:c.a,b:c.b,c:c.c,ta:c.ta,tb:c.tb,tc:c.tc});
+    return true;
   }
   Net.tap={};
   Net.frame=d=>{
     if(!Net.live)return lobby.hidden?advance(d):1;
     if(Net.paused)return 1;
-    const ts=advance(d,()=>{if(Net.cur)Net.cur.n++});
-    Net.sendT+=d;
-    if(Net.sendT>=.035||((Net.tap.a||Net.tap.b||Net.tap.c)&&Net.sendT>=.012)){
-      Net.sendT=0;flush();
+    if(Net.lastStateAt&&Date.now()-Net.lastStateAt>950){
+      if(!Net.stalled){Net.stalled=true;hintNow('連線延遲，等待最新球場狀態');}
+      Net.paused=true;return 1;
     }
-    return ts;
+    Net.sendT+=d;
+    const last=Net.cur,inp=Inp;
+    const inputChanged=!last||Math.abs(inp.x-last.x)>.13||Math.abs(inp.z-last.z)>.13||Math.abs(inp.mag-last.m)>.2||
+      inp.a!==last.a||inp.b!==last.b||inp.c!==last.c;
+    const pressed=Net.tap.a||Net.tap.b||Net.tap.c;
+    // 在本機物理推進前送出最新輸入，讓伺服器確認序號與本機預測對得上。
+    if(!last||Net.sendT>=.025||(inputChanged&&Net.sendT>=.014)||(pressed&&Net.sendT>=.008)){
+      if(flush())Net.sendT=0;
+    }
+    return advance(d,()=>{if(Net.cur)Net.cur.n++});
   };
   setInterval(()=>{if(Net.on)send({t:'p',c:Date.now(),r:Net.rtt})},1000);
   Net.afterGame=()=>{
@@ -1582,7 +1612,7 @@ addEventListener('keydown',e=>{if(e.target?.matches?.('input,textarea'))return;i
 addEventListener('keyup',e=>{if(e.target?.matches?.('input,textarea'))return;if(/^(Arrow|Key[WASD])/.test(e.code)){keys[e.code]=0;keyDir()}if(e.code==='KeyJ')Inp.a=false;if(e.code==='KeyL')Inp.c=false;if(e.code==='KeyK'||e.code==='Space')Inp.b=false});
 
 /* ───────────── 鏡頭與主迴圈 ───────────── */
-let camBase=21,pw=0,ph=0,prMax=Math.min(devicePixelRatio||1,1.5);
+let camBase=21,pw=0,ph=0,prMax=Math.min(devicePixelRatio||1,2);
 function resize(){
   const w=stage.clientWidth,h=stage.clientHeight;if(!w||!h||(w===pw&&h===ph))return;pw=w;ph=h;
   R.setPixelRatio(prMax);R.setSize(w,h,false);cam.aspect=w/h;
@@ -1701,7 +1731,7 @@ function frame(now){
   view(dtR,dtR*ts);
   // 手機撐不住時自動降解析度
   frames++;fpsT+=dtR;
-  if(fpsT>1.8){const fps=frames/fpsT;frames=0;fpsT=0;if(fps<43&&prMax>1){prMax=Math.max(1,prMax-.25);pw=0;resize()}}
+  if(fpsT>2.5){const fps=frames/fpsT;frames=0;fpsT=0;if(fps<38&&prMax>1){prMax=Math.max(1,prMax-.5);pw=0;resize()}}
 }
 window.__game={spinReady,moveKind,TP,G,get Inp(){return Inp},INP,step,drain,newGame,startGame,LV,knock,setS,startShot,updBody,BODIES,cam,Net};
 window.claude?.hot?.snapshot?.(()=>({level:G.level}));
