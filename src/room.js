@@ -54,7 +54,7 @@ export class Room {
     if (m.t === 'r') { seat.type = playerType(m.y); seat.ready = true; return this.maybeStart(); }
     if (m.t === 'p') {
       sock.send(JSON.stringify({ t: 'q', c: m.c }));
-      if (this.sim && Number.isFinite(m.r)) this.sim.G.lat[seat.i] = clampNumber(m.r / 1000 + 0.04, 0, 0.2);
+      if (this.sim && Number.isFinite(m.r)) this.sim.G.lat[seat.i] = clampNumber(m.r / 1000 + 0.04, 0, 0.3);
       return;
     }
     if (m.t === 'i' && this.sim) return this.feed(seat, m);
@@ -66,7 +66,8 @@ export class Room {
   feed(seat, m) {
     const I = this.sim.INP[seat.i];
     const e = { s: Number.isSafeInteger(m.s) && m.s >= 0 ? m.s : seat.ack, x: clampNumber(m.x, -1, 1), z: clampNumber(m.z, -1, 1), mag: clampNumber(m.m, 0, 1),
-      a: m.a === true, b: m.b === true, c: m.c === true, ta: m.ta === true, tb: m.tb === true, tc: m.tc === true, dur: Infinity };
+      a: m.a === true, b: m.b === true, c: m.c === true, ta: m.ta === true, tb: m.tb === true, tc: m.tc === true, dur: Infinity,
+      hd: Number.isFinite(m.hd) && m.hd > 0 ? clampNumber(m.hd, 0, 3000) : 0, rs: Number.isFinite(m.rs) && m.rs >= 0 ? clampNumber(m.rs, 0, 1500) : -1 }; // 投籃按住毫秒、補扣按下時刻（sim 夾在 ±0.12 秒內）
     const length = Math.hypot(e.x, e.z);
     if (length > 1) { e.x /= length; e.z /= length; }
     if (!Number.isSafeInteger(m.pn) || m.pn < 0) { // 舊版客戶端沒有步數：維持「一到就套用」
@@ -96,6 +97,8 @@ export class Room {
     if (e.ta) I.tapA = true;
     if (e.tb) I.tapB = true;
     if (e.tc) I.tapC = true;
+    if (e.hd > 0) I.hd = e.hd;
+    if (e.rs >= 0) I.rs = e.rs;
     seat.cur = e; seat.ack = e.s; seat.since = 0;
   }
   settle(seat) { while (seat.q.length && (!seat.cur || seat.since >= seat.cur.dur)) this.play(seat, seat.q.shift()); }
