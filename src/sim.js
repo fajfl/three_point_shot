@@ -171,7 +171,7 @@ function contestPenalty(p){
   const dx=p.x-o.x,dz=p.z-o.z;
   const face=gap>.001?(dx*o.fx+dz*o.fz)/gap:1;
   if(face<.5)return 0;
-  const base=gap<1.6?.2:gap<2.5?.11:gap<3.5?.055:.025;
+  const base=gap<1.6?.235:gap<2.5?.13:gap<3.5?.06:.025;
   let penalty=base*(.75+.25*clamp((face-.5)/.5,0,1));
   if(ultOn(o)&&o.type==='wall')penalty=Math.min(.28,penalty*1.3);
   if(ultOn(p)&&p.type==='shoot')penalty*=.55;
@@ -327,7 +327,7 @@ function dunkStep(p,dt){
     p.x=lerp(d.x0,tx,e);p.z=lerp(d.z0,tz,e);p.y=1.0*Math.sin(u*PI/2);
     if(u>.2&&o.y>.3&&!(ultOn(p)&&p.type==='slash')){
       const q=ballPos(p);
-      if(hyp(q.x-(o.x+o.fx*.25),q.y-(o.y+2.7),q.z-(o.z+o.fz*.25))<.78+TP[o.type].block){
+      if(hyp(q.x-(o.x+o.fx*.25),q.y-(o.y+2.7),q.z-(o.z+o.fz*.25))<.84+TP[o.type].block){
         d.save=true;d.saveAt=G.t;p.vx=p.vz=0;
         G.slow=Math.max(G.slow,.7);
         emit('dunkRescue',{p:p.id});
@@ -360,7 +360,11 @@ function upd(p,dt){
   p.handV+=(p.hand-p.handV)*(1-Math.exp(-15*dt));
   const pvx=p.vx,pvz=p.vz,sp=speed(p);p.drib+=dt*(6.4+sp*.75);
   const fric=k=>{const f=Math.exp(-k*dt);p.vx*=f;p.vz*=f};
-  let steer=false,vmax=(p===G.holder?5.1:(p.human?4.8:4.5))+TP[p.type].v+(ultOn(p)&&p.type==='wall'?.8:0),acc=16,brk=11.5;
+  // 改善跟防與橫移，抄截成功率維持原先的保守設定。
+  const defending=G.holder&&G.holder!==p&&G.phase==='play';
+  const guardBoost=defending?(p.human?.42:.24*LV[G.level].move):0;
+  let steer=false,vmax=(p===G.holder?5.1:(p.human?4.8:4.5))+TP[p.type].v+(ultOn(p)&&p.type==='wall'?.8:0)+guardBoost,
+      acc=16+(defending?2.5:0),brk=11.5+(defending?2.2:0);
   if(p.shoeLost)vmax*=.76;
   if(G.t<p.chaseUntil)vmax+=.4;
   switch(p.s){
@@ -504,7 +508,7 @@ function stepBall(dt){
   // 空中封蓋
   if(b.mode==='air'&&b.tf<.32&&!b.safe){
     const d=G.p[1-b.owner],wl=ultOn(d)&&d.type==='wall'?.3:0;
-    if(d.y>.2&&hyp(b.x-(d.x+d.fx*.25),b.y-(d.y+2.7),b.z-(d.z+d.fz*.25))<(.72+TP[d.type].block+wl)*(b.ride||1))swat(d,G.p[b.owner]);
+    if(d.y>.2&&hyp(b.x-(d.x+d.fx*.25),b.y-(d.y+2.7),b.z-(d.z+d.fz*.25))<(.79+TP[d.type].block+wl)*(b.ride||1))swat(d,G.p[b.owner]);
   }
   if(b.mode==='loose'&&G.phase==='play'){
     const order=Math.random()<.5?[0,1]:[1,0];
