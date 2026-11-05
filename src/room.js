@@ -2,7 +2,7 @@
 import { createSim } from './sim.js';
 
 const TICK_MS = 16;
-const SNAP_S = 1 / 15; // 15Hz server snapshots, local client still predicts motion
+const SNAP_S = 1 / 25; // 25Hz snapshots (~640B per state) for smoother remote motion
 const clampNumber = (v, min, max) => Number.isFinite(v) ? Math.max(min, Math.min(max, v)) : 0;
 const playerType = v => v === 'shoot' || v === 'slash' || v === 'wall' ? v : 'slash';
 
@@ -50,6 +50,7 @@ export class Room {
     if (i < 0) { sock.send(JSON.stringify({ t: 'full' })); return; }
     const old = this.seats[i];
     this.seats[i] = old ? Object.assign(old, { sock }) : { i, k: m.k, sock, type: playerType(m.y), ready: false, ack: 0 };
+    if (!old) this.seats[i].pendingFx = [];
     sock.send(JSON.stringify({ t: 'seat', seat: i }));
     this.lobby();
     if (this.timer) {
@@ -74,7 +75,7 @@ export class Room {
     this.sim = sim;
     G.online = true; G.myType = this.seats[0].type; G.foeType = this.seats[1].type;
     sim.newGame(false, 'reg');
-    for (const s of this.seats) { s.ready = false; s.ack = 0; s.sock.send(JSON.stringify({ t: 'go', seat: s.i })); }
+    for (const s of this.seats) { s.ready = false; s.ack = 0; s.pendingFx=[]; s.sock.send(JSON.stringify({ t: 'go', seat: s.i })); }
     this.last = Date.now(); this.snapT = SNAP_S; this.paused = false;
     this.timer = setInterval(() => this.tick(), TICK_MS);
   }
@@ -85,12 +86,22 @@ export class Room {
     const { G } = this.sim;
     this.sim.advance(dt);
     this.snapT += dt;
-    if (this.snapT < SNAP_S && G.phase !== 'over') return;
-    this.snapT = 0;
+    if (this.snapT < SNAP_S && G.phase !== 'over' && G.fx.length === 0) return;
+    this.snapT = Math.max(0, this.snapT - SNAP_S);
     const fx = G.fx.splice(0);
     for (const f of fx) if (f[0] === 'over') f[1].stats = G.stats;
-    const body = JSON.stringify({ st: this.sim.snap(), fx });
-    this.each(s => s.sock.send(`{"t":"s","a":${s.ack},` + body.slice(1)));
+    const state = this.sim.snap();
+    // 當對方網路佇列嚴重阻塞時丟棄過時的狀態，但保留待發的遊戲事件。
+    this.each(s => {
+      const backlogged = s.sock.buffered?.() > 98304 && G.phase !== 'over';
+      if (backlogged) {
+        s.pendingFx = (s.pendingFx || []).concat(fx).slice(-80);
+        return;
+      }
+      const events = s.pendingFx?.length ? [...s.pendingFx, ...fx] : fx;
+      s.pendingFx = [];
+      s.sock.send(JSON.stringify({ t:'s', a:s.ack, st:state, fx:events }));
+    });
     if (G.phase === 'over') {
       const ending = JSON.stringify({t:'over',score:G.score.slice(),stats:G.stats});
       this.each(s => s.sock.send(ending));
