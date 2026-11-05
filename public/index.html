@@ -97,13 +97,19 @@ body{font-family:var(--tc);-webkit-user-select:none;user-select:none;-webkit-tou
 .how{margin:0;font-size:13px;line-height:1.55;font-weight:500}
 .how b{font-weight:900;color:var(--you)}
 #host{min-height:56px;border:0;border-radius:4px;background:var(--rival);color:var(--chalk);font:900 22px/1 var(--tc);letter-spacing:.06em}
+#joinBox{display:grid;gap:5px;min-width:0}
+#joinBox label{font:700 13px/1.4 var(--tc)}
+#joinRow{display:flex;gap:8px}
+#roomCode{flex:1;min-width:0;min-height:46px;padding:0 12px;border:2px solid var(--chalk);border-radius:4px;background:rgba(10,17,56,.94);color:var(--chalk);font:800 21px var(--num);letter-spacing:.16em;text-transform:uppercase}
+#joinRoom{min-height:46px;padding:0 18px;border:0;border-radius:4px;background:var(--good);color:var(--night);font:900 16px var(--tc)}
+#joinError{margin:0;color:var(--you);font:700 12px/1.4 var(--tc)}
 #lobby{position:absolute;inset:0;z-index:5;display:grid;align-content:center;justify-items:center;gap:12px;padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:rgba(10,17,56,.94);text-align:center}
 #lobby h2{margin:0;font:900 26px/1.2 var(--tc)}
 #qr{width:min(68vw,270px);aspect-ratio:1;padding:12px;background:var(--chalk);border-radius:4px}
 #qr svg{display:block;width:100%;height:100%}
 #lobCode{margin:0;font:900 40px/1 var(--num);letter-spacing:.14em}
 #lobState{margin:0;min-height:1.5em;font-size:15px;font-weight:700}
-#copy,#lobBack{min-height:46px;padding:0 20px;border:2px solid var(--chalk);border-radius:4px;background:transparent;color:var(--chalk);font:700 15px/1 var(--tc)}
+#copy,#copyCode,#lobBack{min-height:46px;padding:0 20px;border:2px solid var(--chalk);border-radius:4px;background:transparent;color:var(--chalk);font:700 15px/1 var(--tc)}
 #fail{position:absolute;inset:0;display:grid;place-items:center;padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:var(--night);text-align:center;line-height:1.6}
 @media (max-height:760px){.how{display:none}}
 @media (max-height:640px){.seg small{display:none}.logo{font-size:84px}#menu{padding-top:calc(env(safe-area-inset-top,0px) + 14px)}}
@@ -151,7 +157,12 @@ body{font-family:var(--tc);-webkit-user-select:none;user-select:none;-webkit-tou
           <button type="button" id="lvReg" data-lv="reg" aria-pressed="true">系隊學長</button>
           <button type="button" id="lvKing" data-lv="king" aria-pressed="false">河濱阿伯</button>
         </fieldset>
-        <button id="host" type="button" hidden>開房跟朋友打</button>
+        <button id="host" type="button" hidden>開房跟朋友打（QR Code）</button>
+        <div id="joinBox">
+          <label for="roomCode">已有房間代碼？直接輸入</label>
+          <div id="joinRow"><input id="roomCode" type="text" inputmode="text" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="例如 AB3K" aria-label="4 至 8 碼房間代碼"><button id="joinRoom" type="button">加入</button></div>
+          <p id="joinError" role="status" hidden></p>
+        </div>
         <button id="go" type="button">開打</button>
         <p class="how"><b>招式鍵</b>配搖桿：左右變向、往後後撤、往前突破，貼近對手時變成背後運球和轉身，按鈕會顯示現在的招式。先晃再突破更快。<b>操作</b>右下投籃／封蓋、右中運球招式／抄球、右上絕招。<b>投籃</b>長按到綠區放開，側跑騎馬射箭，搖桿往後是後仰，連點兩下假投。近框一律灌籃，被蓋前約 0.7 秒慢動作出現小綠條，按「拉桿！」可以改成反手灌籃。後撤步接三分可先按住投籃，踩到三分線立即出手，綠條較大；假投騙跳後或對手抄空後立刻突破更快。斷踝失誤每次換球權歸零。火鍋把球打向空地，雙方要追球。</p>
       </div>
@@ -161,6 +172,7 @@ body{font-family:var(--tc);-webkit-user-select:none;user-select:none;-webkit-tou
       <div id="qr"></div>
       <p id="lobCode"></p>
       <button id="copy" type="button">複製連結</button>
+      <button id="copyCode" type="button">複製房號</button>
       <p id="lobState" role="status"></p>
       <button id="lobBack" type="button">取消</button>
     </section>
@@ -347,7 +359,7 @@ function contestPenalty(p){
   const dx=p.x-o.x,dz=p.z-o.z;
   const face=gap>.001?(dx*o.fx+dz*o.fz)/gap:1;
   if(face<.5)return 0;
-  const base=gap<1.6?.2:gap<2.5?.11:gap<3.5?.055:.025;
+  const base=gap<1.6?.235:gap<2.5?.13:gap<3.5?.06:.025;
   let penalty=base*(.75+.25*clamp((face-.5)/.5,0,1));
   if(ultOn(o)&&o.type==='wall')penalty=Math.min(.28,penalty*1.3);
   if(ultOn(p)&&p.type==='shoot')penalty*=.55;
@@ -503,7 +515,7 @@ function dunkStep(p,dt){
     p.x=lerp(d.x0,tx,e);p.z=lerp(d.z0,tz,e);p.y=1.0*Math.sin(u*PI/2);
     if(u>.2&&o.y>.3&&!(ultOn(p)&&p.type==='slash')){
       const q=ballPos(p);
-      if(hyp(q.x-(o.x+o.fx*.25),q.y-(o.y+2.7),q.z-(o.z+o.fz*.25))<.78+TP[o.type].block){
+      if(hyp(q.x-(o.x+o.fx*.25),q.y-(o.y+2.7),q.z-(o.z+o.fz*.25))<.84+TP[o.type].block){
         d.save=true;d.saveAt=G.t;p.vx=p.vz=0;
         G.slow=Math.max(G.slow,.7);
         emit('dunkRescue',{p:p.id});
@@ -536,7 +548,11 @@ function upd(p,dt){
   p.handV+=(p.hand-p.handV)*(1-Math.exp(-15*dt));
   const pvx=p.vx,pvz=p.vz,sp=speed(p);p.drib+=dt*(6.4+sp*.75);
   const fric=k=>{const f=Math.exp(-k*dt);p.vx*=f;p.vz*=f};
-  let steer=false,vmax=(p===G.holder?5.1:(p.human?4.8:4.5))+TP[p.type].v+(ultOn(p)&&p.type==='wall'?.8:0),acc=16,brk=11.5;
+  // 改善跟防與橫移，抄截成功率維持原先的保守設定。
+  const defending=G.holder&&G.holder!==p&&G.phase==='play';
+  const guardBoost=defending?(p.human?.42:.24*LV[G.level].move):0;
+  let steer=false,vmax=(p===G.holder?5.1:(p.human?4.8:4.5))+TP[p.type].v+(ultOn(p)&&p.type==='wall'?.8:0)+guardBoost,
+      acc=16+(defending?2.5:0),brk=11.5+(defending?2.2:0);
   if(p.shoeLost)vmax*=.76;
   if(G.t<p.chaseUntil)vmax+=.4;
   switch(p.s){
@@ -680,7 +696,7 @@ function stepBall(dt){
   // 空中封蓋
   if(b.mode==='air'&&b.tf<.32&&!b.safe){
     const d=G.p[1-b.owner],wl=ultOn(d)&&d.type==='wall'?.3:0;
-    if(d.y>.2&&hyp(b.x-(d.x+d.fx*.25),b.y-(d.y+2.7),b.z-(d.z+d.fz*.25))<(.72+TP[d.type].block+wl)*(b.ride||1))swat(d,G.p[b.owner]);
+    if(d.y>.2&&hyp(b.x-(d.x+d.fx*.25),b.y-(d.y+2.7),b.z-(d.z+d.fz*.25))<(.79+TP[d.type].block+wl)*(b.ride||1))swat(d,G.p[b.owner]);
   }
   if(b.mode==='loose'&&G.phase==='play'){
     const order=Math.random()<.5?[0,1]:[1,0];
@@ -875,7 +891,7 @@ const scene=new THREE.Scene();scene.background=new THREE.Color(0x0a1138);
 const FOV=44,cam=new THREE.PerspectiveCamera(FOV,.5,.5,150);
 scene.add(new THREE.HemisphereLight(0xdfe6ff,0x35407f,.82));
 const sun=new THREE.DirectionalLight(0xfff0d4,1.25);sun.position.set(-5,15,12);sun.target.position.set(0,0,6);scene.add(sun,sun.target);
-sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-11,right:11,top:11,bottom:-11,near:2,far:40});sun.shadow.bias=-.0012;sun.shadow.normalBias=.02;
+sun.castShadow=true;sun.shadow.mapSize.set(768,768);Object.assign(sun.shadow.camera,{left:-11,right:11,top:11,bottom:-11,near:2,far:40});sun.shadow.bias=-.0012;sun.shadow.normalBias=.02;
 const rimLight=new THREE.DirectionalLight(0x9fc0ff,.75);rimLight.position.set(4,6,-10);scene.add(rimLight);
 const canvasTex=(w,h,draw)=>{const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=Math.min(8,R.capabilities.getMaxAnisotropy());return t};
 
@@ -1381,6 +1397,7 @@ function drain(){
 }
 let overT=0;
 function gameOver(){
+  if(G.finale)return;
   const a=G.score[G.me],b=G.score[1-G.me],win=a>b,res=$('#result');
   res.hidden=false;res.textContent=`${a} : ${b}`;
   const sm=document.createElement('small');sm.textContent=`${win?'你贏了':(Net.on?'朋友':LV[G.level].name)+'贏了'}，放倒對手 ${G.stats.ankle[G.me]} 次，被放倒 ${G.stats.ankle[1-G.me]} 次`;res.append(sm);
@@ -1392,7 +1409,7 @@ function showHud(name){
   clearTimeout(overT);$('#result').hidden=true;menu.hidden=true;$('#lobby').hidden=true;hud.dataset.off='0';$('#rivalName').textContent=name;$('#s0').textContent='0';$('#s1').textContent='0';
 }
 function startGame(){
-  if(Net.on){audio();startAmb();Net.pressReady();return}
+  if(Net.on){audio();Net.pressReady();return}
   audio();Inp.x=Inp.z=Inp.mag=0;Inp.a=Inp.b=false;startAmb();showHud(LV[G.level].name);
   newGame(false,G.level);
   setTimeout(()=>hint('foe','對手今天打'+TP[G.p[1].type].n+'。絕招鍵集滿能量就能放。',3),600);
@@ -1416,8 +1433,8 @@ if(window.__ONLINE){
   function go(m){
     Net.seat=m.seat;G.me=m.seat;Inp=INP[m.seat];Inp.x=Inp.z=Inp.mag=0;Inp.a=Inp.b=Inp.c=false;
     G.online=true;G.attract=false;G.quiet=true;G.finale=false;G.p[0].human=G.p[1].human=true;
-    if(!m.resume){Net.log=[];Net.cur=null;G.phase='check';G.score=[0,0]}
-    Net.live=true;Net.paused=false;showHud('朋友');
+    if(!m.resume){Net.log=[];Net.cur=null;Net.seq=0;Net.sendT=0;G.phase='check';G.score=[0,0]}
+    Net.live=true;Net.ready=false;Net.paused=false;showHud('朋友');startAmb();
     try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}
   }
   function reconcile(m){
@@ -1425,14 +1442,19 @@ if(window.__ONLINE){
     S.restore(m.st);
     const fi=INP[1-G.me];fi.x=foe.ix;fi.z=foe.iz;fi.mag=foe.mag;fi.a=fi.b=fi.c=false;
     Net.log=Net.log.filter(e=>e.s>m.a);
-    let budget=72;
+    let budget=48;
     for(const e of Net.log){
       live.x=e.x;live.z=e.z;live.mag=e.m;live.a=e.a;live.b=e.b;live.c=e.c;live.tapA=e.ta;live.tapB=e.tb;live.tapC=e.tc;
       for(let i=0;i<e.n&&budget>0&&G.phase!=='over';i++,budget--)step(H);
     }
     Object.assign(live,keep);
-    G.p.forEach((p,i)=>{const dx=was[i][0]-p.x,dz=was[i][1]-p.z;if(hyp(dx,dz)<2.2){p.ex=(p.ex||0)+dx;p.ez=(p.ez||0)+dz}else{p.ex=p.ez=0}});
-    const ex=bw[0]-b.x,ey=bw[1]-b.y,ez=bw[2]-b.z;if(hyp(ex,ey,ez)<1.6){b.ex=(b.ex||0)+ex;b.ey=(b.ey||0)+ey;b.ez=(b.ez||0)+ez}else{b.ex=b.ey=b.ez=0}
+    G.p.forEach((p,i)=>{const dx=was[i][0]-p.x,dz=was[i][1]-p.z;
+      if(hyp(dx,dz)<2.2){p.ex=clamp((p.ex||0)*.5+dx*.7,-.75,.75);p.ez=clamp((p.ez||0)*.5+dz*.7,-.75,.75)}
+      else{p.ex=p.ez=0}
+    });
+    const ex=bw[0]-b.x,ey=bw[1]-b.y,ez=bw[2]-b.z;
+    if(hyp(ex,ey,ez)<1.6){b.ex=clamp((b.ex||0)*.5+ex*.7,-.9,.9);b.ey=clamp((b.ey||0)*.5+ey*.7,-.9,.9);b.ez=clamp((b.ez||0)*.5+ez*.7,-.9,.9)}
+    else{b.ex=b.ey=b.ez=0}
     for(const f of m.fx){if(f[0]==='over'&&f[1].stats)G.stats=f[1].stats;G.fx.push(f)}
   }
   function onMsg(m){
@@ -1440,44 +1462,81 @@ if(window.__ONLINE){
       case's':if(Net.live)reconcile(m);break;
       case'go':G.fx.length=0;go(m);break;
       case'seat':Net.seat=m.seat;break;
-      case'lobby':if(!Net.live){const n=m.n;say(n<2?'等朋友掃碼加入':Net.ready?'等朋友按開打':'朋友來了，按開打')}break;
+      case'lobby':if(!Net.live){const n=m.n;say(n<2?'等朋友掃 QR 或輸入房號':Net.ready?'等朋友按開打':'朋友來了，按開打')}break;
       case'wait':Net.paused=true;hintNow('對手斷線了，等他回來');break;
       case'back':Net.paused=false;hintNow('對手回來了');break;
-      case'over':Net.live=false;break;
+      case'over':
+        Net.live=false;Net.paused=false;
+        if(Array.isArray(m.score)&&m.score.length===2)G.score=m.score;
+        if(m.stats)G.stats=m.stats;
+        G.phase='over';
+        if(!G.finale)gameOver();
+        break;
       case'full':say('這個房間已經滿了');Net.on=false;break;
       case'q':Net.rtt=Date.now()-m.c;break;
     }
   }
   function flush(){
+    if(!Net.ws||Net.ws.readyState!==1)return;
     const t=Net.tap,c={s:++Net.seq,x:Inp.x,z:Inp.z,m:Inp.mag,a:Inp.a,b:Inp.b,c:Inp.c,ta:!!t.a,tb:!!t.b,tc:!!t.c,n:0};
-    t.a=t.b=t.c=false;Net.cur=c;Net.log.push(c);if(Net.log.length>120)Net.log.shift();
+    t.a=t.b=t.c=false;Net.cur=c;Net.log.push(c);if(Net.log.length>64)Net.log.shift();
     send({t:'i',s:c.s,x:+c.x.toFixed(2),z:+c.z.toFixed(2),m:+c.m.toFixed(2),a:c.a,b:c.b,c:c.c,ta:c.ta,tb:c.tb,tc:c.tc});
   }
   Net.tap={};
   Net.frame=d=>{
-    if(!Net.live)return advance(d);
+    if(!Net.live)return lobby.hidden?advance(d):1;
     if(Net.paused)return 1;
     const ts=advance(d,()=>{if(Net.cur)Net.cur.n++});
-    Net.sendT+=d;if(Net.sendT>=.033){Net.sendT=0;flush()}
+    Net.sendT+=d;
+    if(Net.sendT>=.035||((Net.tap.a||Net.tap.b||Net.tap.c)&&Net.sendT>=.012)){
+      Net.sendT=0;flush();
+    }
     return ts;
   };
   setInterval(()=>{if(Net.on)send({t:'p',c:Date.now(),r:Net.rtt})},1000);
-  Net.afterGame=()=>{$('#go').textContent='再來一場';$('#host').hidden=true;$('#lv').hidden=true};
-  Net.pressReady=()=>{Net.ready=true;Inp.tapA=Inp.tapB=Inp.tapC=false;send({t:'r',y:G.myType});if(!Net.ws||Net.ws.readyState>1)connect();lobby.hidden=false;$('#lobTitle').textContent='等朋友按開打';$('#qr').hidden=true;$('#copy').hidden=true;$('#lobCode').textContent=Net.room;say('對方準備好就開始')};
+  Net.afterGame=()=>{
+    Net.live=false;Net.ready=false;Net.paused=false;
+    $('#go').textContent='再來一場';$('#host').hidden=true;$('#joinBox').hidden=true;$('#lv').hidden=true;
+  };
+  Net.pressReady=()=>{
+    Net.ready=true;Inp.tapA=Inp.tapB=Inp.tapC=false;
+    if(!Net.ws||Net.ws.readyState>1)connect();
+    else if(Net.ws.readyState===1)send({t:'r',y:G.myType});
+    lobby.hidden=false;$('#lobTitle').textContent='等朋友按開打';
+    $('#qr').hidden=true;$('#copy').hidden=true;$('#copyCode').hidden=true;
+    $('#lobCode').textContent=Net.room;say('房間 '+Net.room+' · 等對方準備');
+  };
   function leave(){Net.on=false;Net.ready=false;try{Net.ws&&Net.ws.close()}catch(e){}location.href=location.origin+'/'}
   $('#lobBack').addEventListener('click',leave);
   $('#copy').addEventListener('click',()=>{const b=$('#copy');Promise.resolve().then(()=>navigator.clipboard.writeText(link())).then(()=>{b.textContent='已複製'},()=>{b.textContent=link()})});
-  const r=new URLSearchParams(location.search).get('r');
-  if(r){
-    Net.on=true;Net.room=r.toUpperCase().slice(0,8);$('#lv').hidden=true;$('#go').textContent='加入朋友的房間';document.querySelector('.tag').textContent='朋友在等你，選好球員就開打';
+  $('#copyCode').addEventListener('click',()=>{const b=$('#copyCode');Promise.resolve().then(()=>navigator.clipboard.writeText(Net.room)).then(()=>{b.textContent='已複製房號'},()=>{b.textContent=Net.room})});
+  const r=(new URLSearchParams(location.search).get('r')||'').trim().toUpperCase();
+  const joinCode=$('#roomCode'),joinError=$('#joinError');
+  const validCode=v=>/^[A-Z0-9]{4,8}$/.test(v);
+  if(validCode(r)){
+    Net.on=true;Net.room=r;$('#lv').hidden=true;$('#joinBox').hidden=true;
+    $('#go').textContent='加入朋友的房間';document.querySelector('.tag').textContent='朋友在等你，選好球員就開打';
   }else{
-    const h=$('#host');h.hidden=false;$('#go').textContent='打電腦';
-    h.addEventListener('click',()=>{
+    const host=$('#host');host.hidden=false;$('#go').textContent='打電腦';
+    host.addEventListener('click',()=>{
       audio();Net.on=true;Net.room=Array.from({length:4},()=>ALPHA[Math.floor(Math.random()*ALPHA.length)]).join('');
-      Net.ready=true;drawQR();lobby.hidden=false;say('等朋友掃碼加入');connect();
+      Net.ready=true;drawQR();$('#qr').hidden=false;$('#copy').hidden=false;$('#copyCode').hidden=false;
+      lobby.hidden=false;say('掃 QR Code、分享連結或告訴朋友房號');connect();
     });
+    const joinByCode=()=>{
+      const code=joinCode.value.toUpperCase().replace(/[\s-]/g,'');
+      joinCode.value=code;
+      if(!validCode(code)){joinError.hidden=false;joinError.textContent='請輸入 4～8 碼英數房號（例如 AB3K）';return}
+      joinError.hidden=true;
+      Net.on=true;Net.room=code;$('#lv').hidden=true;host.hidden=true;$('#joinBox').hidden=true;
+      document.querySelector('.tag').textContent='房間 '+code+' · 選好球員就能開始';
+      $('#go').textContent='再來一場';
+      history.replaceState(null,'','/?r='+encodeURIComponent(code));
+      startGame();
+    };
+    $('#joinRoom').addEventListener('click',joinByCode);
+    joinCode.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();joinByCode()}});
   }
-  const pr=Net.pressReady;Net.pressReady=()=>{if(!Net.ws)connect();pr()};
 }
 window.__net=Net;
 
@@ -1518,11 +1577,11 @@ document.addEventListener('gesturestart',e=>e.preventDefault());
 // 鍵盤：桌機測試用
 const keys={};
 const keyDir=()=>{if(joyId!==null)return;const x=(keys.ArrowRight||keys.KeyD?1:0)-(keys.ArrowLeft||keys.KeyA?1:0),z=(keys.ArrowDown||keys.KeyS?1:0)-(keys.ArrowUp||keys.KeyW?1:0),l=hyp(x,z);Inp.x=l?x/l:0;Inp.z=l?z/l:0;Inp.mag=l?1:0};
-addEventListener('keydown',e=>{if(e.repeat)return;if(/^(Arrow|Key[WASD])/.test(e.code)){keys[e.code]=1;keyDir();e.preventDefault()}if(e.code==='KeyJ')Inp.a=true;if(e.code==='KeyL')Inp.c=true;if(e.code==='KeyK'||e.code==='Space'){Inp.b=true;e.preventDefault()}});
-addEventListener('keyup',e=>{if(/^(Arrow|Key[WASD])/.test(e.code)){keys[e.code]=0;keyDir()}if(e.code==='KeyJ')Inp.a=false;if(e.code==='KeyL')Inp.c=false;if(e.code==='KeyK'||e.code==='Space')Inp.b=false});
+addEventListener('keydown',e=>{if(e.target?.matches?.('input,textarea'))return;if(e.repeat)return;if(/^(Arrow|Key[WASD])/.test(e.code)){keys[e.code]=1;keyDir();e.preventDefault()}if(e.code==='KeyJ')Inp.a=true;if(e.code==='KeyL')Inp.c=true;if(e.code==='KeyK'||e.code==='Space'){Inp.b=true;e.preventDefault()}});
+addEventListener('keyup',e=>{if(e.target?.matches?.('input,textarea'))return;if(/^(Arrow|Key[WASD])/.test(e.code)){keys[e.code]=0;keyDir()}if(e.code==='KeyJ')Inp.a=false;if(e.code==='KeyL')Inp.c=false;if(e.code==='KeyK'||e.code==='Space')Inp.b=false});
 
 /* ───────────── 鏡頭與主迴圈 ───────────── */
-let camBase=21,pw=0,ph=0,prMax=Math.min(devicePixelRatio||1,2);
+let camBase=21,pw=0,ph=0,prMax=Math.min(devicePixelRatio||1,1.5);
 function resize(){
   const w=stage.clientWidth,h=stage.clientHeight;if(!w||!h||(w===pw&&h===ph))return;pw=w;ph=h;
   R.setPixelRatio(prMax);R.setSize(w,h,false);cam.aspect=w/h;
@@ -1628,17 +1687,20 @@ function view(dtR,dtS){
   }
   R.render(scene,cam);
 }
+const lobbyIsVisible=()=>!$('#lobby').hidden;
 let last=performance.now();
 function frame(now){
   requestAnimationFrame(frame);
   const dtR=Math.min(.05,(now-last)/1000);last=now;
-  if(G.phase!=='over'||G.finale){
-    const ts=Net.on?Net.frame(dtR):advance(dtR);
-    drain();view(dtR,dtR*ts);
-  }
+  const ts=G.phase==='over'?0:Net.on?Net.frame(dtR):advance(dtR);
+  drain();
+  if(G.phase==='over'&&!G.finale)gameOver();
+  // 結算與等待頁不重繪遮住的 3D 球場，降低手機發熱與耗電。
+  if(lobbyIsVisible()||G.phase==='over'&&!menu.hidden)return;
+  view(dtR,dtR*ts);
   // 手機撐不住時自動降解析度
   frames++;fpsT+=dtR;
-  if(fpsT>2.5){const fps=frames/fpsT;frames=0;fpsT=0;if(fps<38&&prMax>1){prMax=Math.max(1,prMax-.5);pw=0;resize()}}
+  if(fpsT>1.8){const fps=frames/fpsT;frames=0;fpsT=0;if(fps<43&&prMax>1){prMax=Math.max(1,prMax-.25);pw=0;resize()}}
 }
 window.__game={spinReady,moveKind,TP,G,get Inp(){return Inp},INP,step,drain,newGame,startGame,LV,knock,setS,startShot,updBody,BODIES,cam,Net};
 window.claude?.hot?.snapshot?.(()=>({level:G.level}));
