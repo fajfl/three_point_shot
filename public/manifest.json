@@ -1,0 +1,17 @@
+{
+  "name": "斷踝 1v1 街頭籃球",
+  "short_name": "斷踝",
+  "description": "手機直式 3D 街頭籃球一對一：晃倒對手、隔扣、三分大賽，掃 QR Code 或隨機配對就能連線對打。",
+  "lang": "zh-Hant",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a1138",
+  "theme_color": "#0a1138",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

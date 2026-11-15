@@ -76,3 +76,35 @@ test('單人投籃模式：對手停在場邊，不會來撿球', () => {
   assert.equal(G.holder, null);
   assert.ok(Math.hypot(foe.x - x0, foe.z - z0) < .05, '對手沒有移動');
 });
+
+test('亂按測試：人對人、人對電腦、電腦對打各打幾場，不會出現壞數值、卡死或出界', () => {
+  let seed = 4242; const r = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+  for (let g = 0; g < 9; g++) {
+    const sim = createSim(), { G } = sim, mode = g % 3;
+    G.online = mode === 0; G.win = 7;
+    sim.newGame(false, ['rookie', 'reg', 'king'][g % 3]);
+    if (mode === 2) G.p[0].human = false;
+    let n = 0, phase = '', phaseN = 0;
+    while (G.phase !== 'over' && n++ < 120 * 60 * 12) {
+      if (n % 9 === 0) for (const p of G.p) if (p.human) {
+        const I = sim.INP[p.id];
+        if (r() < .5) { const a = r() * 6.283; I.x = Math.cos(a); I.z = Math.sin(a); I.mag = 1; }
+        if (G.holder === p && r() < .35) { const d = Math.hypot(p.x, 1.5 - p.z) || 1; I.x = -p.x / d; I.z = (1.5 - p.z) / d; I.mag = 1; }
+        I.a = r() < .16; if (I.a) I.tapA = true;
+        const b = r(); if (b < .14) { I.b = true; I.tapB = true; } else if (b < .5) I.b = false;
+        I.c = r() < .05; if (I.c) I.tapC = true;
+      }
+      sim.step(sim.H); G.fx.length = 0;
+      for (const p of G.p) {
+        for (const k of ['x', 'z', 'y', 'vx', 'vz', 'vy', 'fx', 'fz', 'en', 'meter']) assert.ok(Number.isFinite(p[k]), `第 ${g} 場：p${p.id}.${k} = ${p[k]}（狀態 ${p.s}）`);
+        assert.ok(Math.abs(p.x) <= 6.2 && p.z >= .3 && p.z <= 11.6 && p.y >= 0 && p.y < 3.2, `第 ${g} 場：球員跑出場外`);
+      }
+      const b = G.ball;
+      assert.ok(Number.isFinite(b.x + b.y + b.z + b.vx + b.vy + b.vz), `第 ${g} 場：球的數值壞了`);
+      if (G.phase !== phase) { phase = G.phase; phaseN = 0; } else phaseN++;
+      assert.ok(!(G.phase === 'check' && phaseN > 150) && !(G.phase === 'dead' && phaseN > 480), `第 ${g} 場：卡在 ${G.phase}`);
+      assert.ok(G.looseT <= 7.6, '沒人撿的球會在 7.5 秒後重開');
+    }
+    assert.equal(G.phase, 'over', `第 ${g} 場 12 分鐘沒打完（${G.score}）`);
+  }
+});

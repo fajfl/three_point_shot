@@ -29,6 +29,7 @@ const playerType = v => v === 'shoot' || v === 'slash' || v === 'wall' ? v : 'sl
 const STALE_MS = 4000;        // 比賽中這麼久沒收到任何訊息（手機每秒送一次 ping）就當作斷線，不讓對手跟「殭屍」打
 const LOBBY_STALE_MS = 12000; // 等待室裡的死連線佔著位子太久就清掉
 const GRACE_MS = 45000;       // 斷線後等對方回來的時間，超過就判離開的人輸
+const RESET_MS = 2500;        // 暫停超過這麼久，回來時才從檢查球重新開始；瞬斷就原地繼續
 const IDLE_MS = 15 * 60000;   // 房間沒在比賽、閒置這麼久就關閉，不讓忘記關的分頁一直佔用
 const WINS = [7, 11, 21];     // 房主可選的比賽長度
 const validKey = k => typeof k === 'string' && k.length >= 6 && k.length <= 40;
@@ -43,6 +44,7 @@ export class Room {
     this.timer = null;
     this.house = null;
     this.paused = false;
+    this.pausedAt = 0;
     this.deadline = 0;
     this.last = 0;
     this.snapT = 0;
@@ -167,11 +169,11 @@ export class Room {
     if (this.sim) Object.assign(this.sim.INP[seat.i], { x: 0, z: 0, mag: 0, a: false, b: false, c: false, tapA: false, tapB: false, tapC: false, hd: 0, rs: -1 });
   }
   resume() {
-    const wasPaused = this.paused;
-    this.paused = false; this.deadline = 0; this.last = Date.now();
-    // 真的暫停過：從檢查球重新開始這一波，雙方都有一秒回到位置，不會一回來就被偷襲
-    if (wasPaused) { const { G } = this.sim; if (G.phase === 'play') this.sim.toCheck(G.off); else if (G.phase === 'check') G.pt = 0; }
-    this.each(s => s.sock.send('{"t":"back"}'));
+    const now = Date.now(), long = this.paused && now - this.pausedAt > RESET_MS;
+    this.paused = false; this.deadline = 0; this.last = now;
+    // 停了好一陣子：從檢查球重新開始這一波，雙方都有一秒回到位置，不會一回來就被偷襲。瞬斷（一兩秒內接回）就原地繼續，不打斷進攻
+    if (long) { const { G } = this.sim; if (G.phase === 'play') this.sim.toCheck(G.off); else if (G.phase === 'check') G.pt = 0; }
+    this.each(s => s.sock.send(long ? '{"t":"back","c":1}' : '{"t":"back"}'));
   }
   close(sock) {
     const seat = this.seats.find(s => s && s.sock === sock);
@@ -180,7 +182,7 @@ export class Room {
     if (!this.timer) { this.seats[seat.i] = null; this.lobby(); this.touch(); return; }
     // 比賽中斷線：暫停，等他回來
     this.neutral(seat);
-    if (!this.paused) { this.paused = true; this.deadline = Date.now() + GRACE_MS; }
+    if (!this.paused) { this.paused = true; this.pausedAt = Date.now(); this.deadline = this.pausedAt + GRACE_MS; }
     const s = this.waitLeft();
     this.each(o => o.sock.send(JSON.stringify({ t: 'wait', s })));
   }

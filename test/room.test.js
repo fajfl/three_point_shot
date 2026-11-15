@@ -82,10 +82,25 @@ test('比賽中斷線：暫停並通知對手，回來後從檢查球繼續', t 
   assert.equal(room.sim.G.t, t0, '暫停時比賽時間不動');
   const b2 = sock(); join(room, b2, 'token-bbbb');
   assert.equal(last(b2, 'go').resume, true); assert.equal(last(b2, 'go').seat, 1);
-  assert.ok(last(a, 'back') && last(b2, 'back'));
+  assert.equal(last(a, 'back').c, 1); assert.equal(last(b2, 'back').c, 1);
   assert.equal(room.sim.G.phase, 'check', '重新檢查球');
   run(room, 200, [a, b2]);
   assert.ok(of(b2, 's')[0].f, '重連後第一份是完整快照');
+});
+
+test('瞬斷（一兩秒內接回）：原地繼續，不重置球權', t => {
+  timers(t);
+  const room = new Room(), { a, b } = start(room);
+  run(room, 2500, [a, b]);
+  assert.equal(room.sim.G.phase, 'play');
+  room.close(b);
+  run(room, 600, [a]);
+  const b2 = sock(); join(room, b2, 'token-bbbb');
+  assert.equal(room.paused, false);
+  assert.equal(room.sim.G.phase, 'play', '不重新檢查球');
+  assert.equal(last(a, 'back').c, undefined);
+  run(room, 200, [a, b2]);
+  assert.ok(of(b2, 's')[0].f);
 });
 
 test('斷線超過 45 秒：留下來的人獲勝', t => {

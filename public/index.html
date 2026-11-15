@@ -1871,7 +1871,7 @@ function startGame(){
   setTimeout(()=>hint('foe','對手今天打'+TP[G.p[1].type].n+'。能量滿了長按絕招鍵 0.25 秒就能放。',3),600);
   try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}
 }
-const Net={on:false,live:false,ws:null,seat:-1,room:'',ready:false,tap:null,log:[],seq:0,cur:null,sendT:0,rtt:90,rttN:0,jitter:0,lastStateAt:0,lastRx:0,openAt:0,n:0,paused:false,waitPeer:false,waitEnd:0,stalled:false,tries:0,retry:0,gone:0,base:null,pend:null,needFull:false,dbg:null,dead:false,away:false,win:Save.win,names:['',''],peer:'',fw:null,why:'',quickOn:false,foeName(){return'朋友'},afterGame(){},pressReady(){},quit(){},frame(d){return advance(d)}};
+const Net={on:false,live:false,ws:null,seat:-1,room:'',ready:false,tap:null,log:[],seq:0,cur:null,sendT:0,rtt:90,rttN:0,jitter:0,lastStateAt:0,lastRx:0,openAt:0,downAt:0,waitAt:0,n:0,paused:false,waitPeer:false,waitEnd:0,stalled:false,tries:0,retry:0,gone:0,base:null,pend:null,needFull:false,dbg:null,dead:false,away:false,win:Save.win,names:['',''],peer:'',fw:null,why:'',quickOn:false,foeName(){return'朋友'},afterGame(){},pressReady(){},quit(){},frame(d){return advance(d)}};
 const tagLine=t=>{document.querySelector('.tag').textContent=t};
 const paintTag=()=>{if(!Net.on)tagLine(`河濱 3 號場，一對一，先到 ${Save.win} 分`)};
 const wake=()=>{try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}};
@@ -1905,18 +1905,18 @@ if(window.__ONLINE){
       lost();
       // 切到別的 App 時不重連（伺服器會暫停比賽等我回來），回到畫面再連
       if(Net.dead||document.hidden){Net.away=true;netUi();return}
-      Net.tries++;
+      Net.tries++;if(Net.tries===1)Net.downAt=Date.now();
       if(!Net.live)say(Net.tries>3?'連不上伺服器，持續重試中，請檢查網路':'連線中，請稍等');
-      netUi();
-      // 第一次立刻重連，之後逐步拉長（最長 2.5 秒），不會在網路不通時狂打伺服器
-      Net.retry=setTimeout(connect,Math.min(2500,250*Math.pow(2,Math.min(Net.tries-1,4))));
+      netUi();setTimeout(netUi,650);
+      // 第一次幾乎立刻重連，之後逐步拉長（最長 2.5 秒），不會在網路不通時狂打伺服器
+      Net.retry=setTimeout(connect,Net.tries===1?40:Math.min(2500,250*Math.pow(2,Math.min(Net.tries-1,4))));
     };
   }
   // 手機關螢幕後連線可能已死但瀏覽器還回報開著，所以看「多久沒收到訊息」來判斷。
   function revive(){
     const w=Net.ws;Net.ws=null;lost();
     try{w&&w.close()}catch(e){}
-    Net.tries=0;connect();netUi();
+    Net.tries=0;Net.downAt=Date.now();connect();netUi();setTimeout(netUi,650);
   }
   function watch(limit){
     if(!Net.on||!Net.room||Net.dead||document.hidden)return;
@@ -1933,9 +1933,11 @@ if(window.__ONLINE){
     if(Net.live&&!G.finale){
       const up=Net.ws&&Net.ws.readyState===1;
       if(Net.dead){t='連線已關閉';s='這場比賽已在另一個分頁開啟'}
-      else if(!up){t='連線中斷';s=Net.tries>1?`重新連線中…（第 ${Net.tries} 次）\n45 秒內連回來就能繼續`:'重新連線中…'}
+      // 一眨眼就接回來的瞬斷不跳卡片，超過 0.6 秒才顯示
+      else if(!up){if(Date.now()-Net.downAt>=600){t='連線中斷';s=Net.tries>1?`重新連線中…（第 ${Net.tries} 次）\n45 秒內連回來就能繼續`:'重新連線中…'}}
       else if(Net.waitPeer){
-        if(!Net.waitEnd){t='重新同步中';s='馬上回到比賽'}
+        if(!Net.waitEnd){if(Date.now()-Net.downAt>=600){t='重新同步中';s='馬上回到比賽'}}
+        else if(Date.now()-Net.waitAt<600){}
         else{const left=Math.max(0,Math.ceil((Net.waitEnd-Date.now())/1000));t=Net.foeName()+'斷線了';s=`等他回來，還有 ${left} 秒\n時間到這場算你贏`}
       }else if(Net.stalled){t='訊號不穩';s='等待伺服器回應…'}
     }
@@ -2051,12 +2053,12 @@ if(window.__ONLINE){
         if(Net.quickOn&&!ended){say(n<2?'配對成功，等對手進場…':'對手進場了，馬上開始');break}
         say(n<2?(ended?who+'離開了'+(Net.quickOn?'':'，掃碼重新邀請'):'等朋友掃 QR 或輸入房號'):Net.ready?(ended?'等'+who+'按再來一場':'等'+who+'按開打'):who+'來了，按開打');
         if(ended&&!Net.ready){ag.hidden=!(n<2||m.r>0);ag.textContent=n<2?who+'離開了'+(Net.quickOn?'，可以回主選單重新配對':'，按再來一場可以重新邀請'):who+'想再打一場'}
-        if(ended&&Net.ready&&n<2&&!Net.quickOn)showInvite();
+        if(Net.ready&&n<2&&!Net.quickOn&&!lobby.hidden)showInvite();
         if(!ended&&!Net.ready)tagLine(n<2?`房間 ${Net.room} 目前沒有其他人，可以先準備`:`${who}在等你，選好球員就開打（先到 ${m.w||11} 分）`);
         break;
       }
-      case'wait':Net.waitPeer=true;Net.paused=true;Net.waitEnd=Date.now()+(Number.isFinite(m.s)?m.s:45)*1000;netUi();break;
-      case'back':Net.waitPeer=false;Net.paused=false;Net.lastStateAt=Date.now();netUi();hintNow('連線恢復，從檢查球繼續');break;
+      case'wait':if(!Net.waitPeer||!Net.waitEnd)Net.waitAt=Date.now();Net.waitPeer=true;Net.paused=true;Net.waitEnd=Date.now()+(Number.isFinite(m.s)?m.s:45)*1000;netUi();setTimeout(netUi,650);break;
+      case'back':Net.waitPeer=false;Net.paused=false;Net.lastStateAt=Date.now();netUi();if(m.c)hintNow('連線恢復，從檢查球繼續');break;
       case'over':
         if(Array.isArray(m.score)&&m.score.length===2)G.score=m.score;
         if(m.stats)G.stats=m.stats;
@@ -2508,7 +2510,10 @@ for(const b of document.querySelectorAll('#winSeg button'))b.addEventListener('c
 paintWin();paintTag();if(gfx!=='auto')applyGfx();
 $('#pHow').innerHTML=document.querySelector('.how').innerHTML;
 // 單人模式切到別的 App 或關螢幕：自動暫停
-document.addEventListener('visibilitychange',()=>{if(document.hidden&&inGame()&&!Net.on&&!G.finale)openPause()});
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){if(inGame()&&!Net.on&&!G.finale)openPause()}
+  else if(inGame())wake(); // 切走時系統會放掉螢幕恆亮，回來要重新要求
+});
 addEventListener('keydown',e=>{if(e.code!=='Escape'||e.target?.matches?.('input,textarea'))return;if(!pauseEl.hidden)closePause();else if(inGame())openPause()});
 
 /* ───────────── 三分大賽：五個點各五球，每點最後一顆花球算 2 分，滿分 30。連進越多綠區越窄 ───────────── */
@@ -2579,6 +2584,8 @@ for(let i=0;i<360;i++)step(H);G.fx.length=0;
 requestAnimationFrame(frame);
 }
 window.claude?.hot?.ready?window.claude.hot.ready(boot):boot(window.claude?.hot?.data??{});
+// 部署版才註冊 service worker：可以加到主畫面，離線也能打單人模式
+if(window.__ONLINE&&window.isSecureContext&&'serviceWorker' in navigator)addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{})});
 </script>
 
 </body></html>
