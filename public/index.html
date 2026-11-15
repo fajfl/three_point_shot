@@ -1853,7 +1853,7 @@ function gameOver(){
     :why==='quit'?(win?foeName+'離開了比賽，這場算你贏':'你離開了比賽')
     :why==='gone'?'連線中斷太久，這場比賽沒有結果'
     :`${win?'你贏了':foeName+'贏了'}，放倒對手 ${G.stats.ankle[G.me]} 次，被放倒 ${G.stats.ankle[1-G.me]} 次`;
-  res.append(sm);paintStats();
+  res.append(sm);if(why==='gone')$('#stats').hidden=true;else paintStats();
   G.winner=win?G.me:1-G.me;G.finale=true;again=null;$('#go').textContent='再來一場';menu.classList.add('ended');menu.hidden=false;hud.dataset.off='1';closePause();
   if(why==='gone'){$('#recap').hidden=true;Net.afterGame();return}
   Career.finish(win);
@@ -1883,6 +1883,7 @@ if(window.__ONLINE){
   const say=t=>{lobState.textContent=t};
   const link=()=>location.origin+'/?r='+Net.room;
   const ping=()=>send({t:'p',c:Date.now(),r:Net.rtt});
+  const isHost=()=>{try{return sessionStorage.getItem('dh-host')===Net.room}catch(e){return false}};
   Net.foeName=()=>Net.names[1-Net.seat]||Net.peer||(Net.quickOn?'對手':'朋友');
   function drawQR(){const q=qrcode(0,'M');q.addData(link());q.make();$('#qr').innerHTML=q.createSvgTag({scalable:true,margin:0});$('#lobCode').textContent=Net.room}
   // 斷線時清掉本機的預測狀態，等伺服器重新給完整快照
@@ -1894,7 +1895,7 @@ if(window.__ONLINE){
     ws.onopen=()=>{
       Net.tries=0;Net.away=false;Net.lastRx=Date.now();
       // 帶上規則版本、名字與（房主的）比賽長度；已經按了準備就一併補送
-      send({t:'j',k:token,v:VER,y:G.myType,n:Save.name,w:Net.win});
+      send({t:'j',k:token,v:VER,y:G.myType,n:Save.name,w:isHost()?Net.win:undefined});
       if(Net.ready)send({t:'r',y:G.myType,n:Save.name});
       // 連上後馬上連量三次延遲，不必等好幾秒才知道網路狀況
       ping();setTimeout(ping,250);setTimeout(ping,500);netUi();
@@ -2051,7 +2052,7 @@ if(window.__ONLINE){
         Net.n=m.n;Net.peer=typeof m.pn==='string'?m.pn:'';if(Net.live)break;
         const n=m.n,ag=$('#again'),ended=G.finale,who=Net.peer||(Net.quickOn?'對手':'朋友');
         if(Net.quickOn&&!ended){say(n<2?'配對成功，等對手進場…':'對手進場了，馬上開始');break}
-        say(n<2?(ended?who+'離開了'+(Net.quickOn?'':'，掃碼重新邀請'):'等朋友掃 QR 或輸入房號'):Net.ready?(ended?'等'+who+'按再來一場':'等'+who+'按開打'):who+'來了，按開打');
+        say((n<2?(ended?who+'離開了'+(Net.quickOn?'':'，掃碼重新邀請'):'等朋友掃 QR 或輸入房號'):Net.ready?(ended?'等'+who+'按再來一場':'等'+who+'按開打'):who+'來了，按開打')+(m.w&&!Net.quickOn?` · 先到 ${m.w} 分`:''));
         if(ended&&!Net.ready){ag.hidden=!(n<2||m.r>0);ag.textContent=n<2?who+'離開了'+(Net.quickOn?'，可以回主選單重新配對':'，按再來一場可以重新邀請'):who+'想再打一場'}
         if(Net.ready&&n<2&&!Net.quickOn&&!lobby.hidden)showInvite();
         if(!ended&&!Net.ready)tagLine(n<2?`房間 ${Net.room} 目前沒有其他人，可以先準備`:`${who}在等你，選好球員就開打（先到 ${m.w||11} 分）`);
@@ -2219,6 +2220,7 @@ if(window.__ONLINE){
     $('#host').addEventListener('click',()=>{
       audio();if(Ladder.on||Net.on)return;
       Net.on=true;Net.dead=false;Net.win=Save.win;Net.room=Array.from({length:4},()=>ALPHA[Math.floor(Math.random()*ALPHA.length)]).join('');
+      try{sessionStorage.setItem('dh-host',Net.room)}catch(e){}
       Net.ready=true;foot.classList.add('net');showInvite();
       lobby.hidden=false;say('掃 QR Code、分享連結或告訴朋友房號');connect();
       // 網址帶上房號：不小心重新整理也回得來

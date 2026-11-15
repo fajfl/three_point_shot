@@ -86,7 +86,7 @@ Cloudflare Workers 匯入這個 repo，部署指令用 `npx wrangler deploy`。�
 
 ## 開發與測試
 
-不需要安裝任何套件（Node 20 以上）。
+不需要安裝任何套件（Node 22 以上）。
 
 ```bash
 npm test                 # 規則自洽與可重現性、亂按測試、房間與配對流程

@@ -141,8 +141,8 @@ export class Room {
     if (i < 0) i = this.seats.findIndex(s => !s);
     if (i < 0) { sock.send('{"t":"full"}'); return; }
     const old = this.seats[i], prev = old && old.sock;
-    // 房間是空的：第一個進來的人（房主）決定比賽長度
-    if (!old && !this.seats[1 - i] && !this.timer) this.win = WINS.includes(m.w) ? m.w : 11;
+    // 比賽長度由開房的人決定：只有房主的手機會送 w（用連結、房號進來的人不送），所以不管誰先連上都以房主為準
+    if (WINS.includes(m.w) && !this.timer) this.win = m.w;
     const seat = old || { i, k: m.k, sock: null, type: playerType(m.y), name: '', ready: false, ack: 0, since: 0, base: null, n: 0, cur: null, q: [], trimT: 0, pendingFx: [], rx: 0 };
     seat.sock = sock; seat.rx = Date.now();
     if (m.n !== undefined) seat.name = cleanName(m.n);

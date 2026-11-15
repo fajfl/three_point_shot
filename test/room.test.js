@@ -16,7 +16,7 @@ function timers(t) { mock.timers.enable({ apis: ['setInterval', 'setTimeout', 'D
 function run(room, ms, alive) { for (let t = 0; t < ms; t += 16) { mock.timers.tick(16); if (t % 496 === 0) for (const s of alive) if (!s.closed) ping(room, s); } }
 function start(room) {
   const a = sock(), b = sock();
-  join(room, a, 'token-aaaa', { n: '阿明', w: 7 }); join(room, b, 'token-bbbb', { n: '<b>小華</b>', w: 21 });
+  join(room, a, 'token-aaaa', { n: '阿明', w: 7 }); join(room, b, 'token-bbbb', { n: '<b>小華</b>' });
   ready(room, a); ready(room, b);
   return { a, b };
 }
@@ -52,6 +52,21 @@ test('兩人準備好就開賽：房主決定比賽長度、名字會被清理',
   assert.ok(s.length >= 20 && s.length <= 40, `一秒約 25 份快照，實際 ${s.length}`);
   assert.ok(s[0].f && s[0].st, '第一份是完整快照');
   assert.equal(room.sim.G.win, 7);
+});
+
+test('房主去分享連結時被踢出等待室、朋友先進房：房主回來後仍用房主的比賽長度', t => {
+  timers(t);
+  const room = new Room(), a = sock(), b = sock();
+  join(room, a, 'token-aaaa', { w: 21 });
+  room.close(a);
+  join(room, b, 'token-bbbb');
+  assert.equal(last(b, 'lobby').w, 21, '房間還在時沿用房主先前的設定');
+  const a2 = sock(); join(room, a2, 'token-aaaa', { w: 7 });
+  assert.equal(last(b, 'lobby').w, 7);
+  ready(room, a2); ready(room, b);
+  assert.equal(last(b, 'go').w, 7);
+  join(room, sock(), 'token-aaaa', { w: 21 });
+  assert.equal(room.win, 7, '比賽開始後不能再改');
 });
 
 test('打完會送出結果與勝方，再按一次就在同一間房重賽', t => {
