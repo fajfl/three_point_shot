@@ -26,38 +26,67 @@ const QUEUE_KEEP = 3; // 平時希望只留幾步
 const FULL_EVERY = 75; // 約 3 秒補送一次完整狀態，當作保險
 const BACKLOG = 24576; // 送出佇列超過這個大小（約 1 秒的快照）就丟掉過時的狀態
 const playerType = v => v === 'shoot' || v === 'slash' || v === 'wall' ? v : 'slash';
+const STALE_MS = 4000;        // 比賽中這麼久沒收到任何訊息（手機每秒送一次 ping）就當作斷線，不讓對手跟「殭屍」打
+const LOBBY_STALE_MS = 12000; // 等待室裡的死連線佔著位子太久就清掉
+const GRACE_MS = 45000;       // 斷線後等對方回來的時間，超過就判離開的人輸
+const IDLE_MS = 15 * 60000;   // 房間沒在比賽、閒置這麼久就關閉，不讓忘記關的分頁一直佔用
+const WINS = [7, 11, 21];     // 房主可選的比賽長度
+const validKey = k => typeof k === 'string' && k.length >= 6 && k.length <= 40;
+const cleanName = v => typeof v === 'string' ? [...v.replace(/[\u0000-\u001f\u007f<>&"'`]/g, '').trim()].slice(0, 10).join('') : '';
+let simVer = 0;
+const ver = () => simVer || (simVer = createSim().VER); // 第一次有人連線時才建立（Workers 不允許在全域範圍取亂數）
 
 export class Room {
   constructor() {
     this.seats = [null, null];
     this.sim = null;
     this.timer = null;
+    this.house = null;
     this.paused = false;
+    this.deadline = 0;
     this.last = 0;
     this.snapT = 0;
     this.result = null;
     this.players = [];
+    this.win = 11;
+    this.idleAt = Date.now();
   }
   count() { return this.seats.filter(s => s && s.sock).length; }
   each(fn) { for (const s of this.seats) if (s && s.sock) fn(s); }
   lobby() {
     const n = this.count(), r = this.seats.filter(s => s && s.ready).length;
-    this.each(s => s.sock.send(JSON.stringify({ t: 'lobby', n, r: s.ready ? r - 1 : r })));
+    this.each(s => { const o = this.seats[1 - s.i]; s.sock.send(JSON.stringify({ t: 'lobby', n, r: s.ready ? r - 1 : r, w: this.win, pn: o && o.sock ? o.name : '' })); });
+  }
+  goMsg(seat, resume) {
+    const m = { t: 'go', seat: seat.i, w: this.win, names: this.seats.map(s => s ? s.name : '') };
+    if (resume) m.resume = true;
+    return JSON.stringify(m);
+  }
+  // 有人進出或開賽時呼叫：重設閒置計時，並確保每秒一次的巡房在跑
+  touch() {
+    this.idleAt = Date.now();
+    if (!this.house) this.house = setInterval(() => this.sweep(), 1000);
   }
 
   message(sock, raw) {
     let m; try { m = JSON.parse(raw); } catch { return; }
+    if (!m || typeof m !== 'object') return;
     if (m.t === 'j') return this.join(sock, m);
     const seat = this.seats.find(s => s && s.sock === sock);
     if (!seat) return;
-    if (m.t === 'rs') { seat.base = null; return; } // 客戶端要求補送完整快照
-    if (m.t === 'r') { seat.type = playerType(m.y); seat.ready = true; return this.maybeStart(); }
-    if (m.t === 'p') {
-      sock.send(JSON.stringify({ t: 'q', c: m.c }));
-      if (this.sim && Number.isFinite(m.r)) this.sim.G.lat[seat.i] = clampNumber(m.r / 1000 + 0.04, 0, 0.3);
-      return;
+    seat.rx = Date.now();
+    switch (m.t) {
+      case 'i': if (this.sim) this.feed(seat, m); return;
+      case 'p':
+        sock.send(JSON.stringify({ t: 'q', c: Number.isFinite(m.c) ? m.c : 0 }));
+        if (this.sim && Number.isFinite(m.r)) this.sim.G.lat[seat.i] = clampNumber(m.r / 1000 + 0.04, 0, 0.3);
+        return;
+      case 'rs': seat.base = null; return; // 客戶端要求補送完整快照
+      case 'r':
+        seat.type = playerType(m.y); if (m.n !== undefined) seat.name = cleanName(m.n);
+        seat.ready = true; this.touch(); return this.maybeStart();
+      case 'bye': return this.leave(seat);
     }
-    if (m.t === 'i' && this.sim) return this.feed(seat, m);
   }
   // ---- 輸入緩衝 ----
   // 每筆指令帶著「上一筆指令在客戶端實際跑了幾步（pn）」。伺服器照這個步數把每筆指令各自執行完，
@@ -70,7 +99,7 @@ export class Room {
       hd: Number.isFinite(m.hd) && m.hd > 0 ? clampNumber(m.hd, 0, 3000) : 0, rs: Number.isFinite(m.rs) && m.rs >= 0 ? clampNumber(m.rs, 0, 1500) : -1 }; // 投籃按住毫秒、補扣按下時刻（sim 夾在 ±0.12 秒內）
     const length = Math.hypot(e.x, e.z);
     if (length > 1) { e.x /= length; e.z /= length; }
-    if (!Number.isSafeInteger(m.pn) || m.pn < 0) { // 舊版客戶端沒有步數：維持「一到就套用」
+    if (!Number.isSafeInteger(m.pn) || m.pn < 0 || m.pn > 1e6) { // 舊版客戶端沒有步數：維持「一到就套用」
       seat.q = []; this.play(seat, e); return;
     }
     const last = seat.q.length ? seat.q[seat.q.length - 1] : seat.cur;
@@ -103,32 +132,94 @@ export class Room {
   }
   settle(seat) { while (seat.q.length && (!seat.cur || seat.since >= seat.cur.dur)) this.play(seat, seat.q.shift()); }
   join(sock, m) {
+    // 規則版本不同（通常是手機還留著舊版頁面）：預測會對不上，請對方重新整理
+    if (m.v !== ver()) { sock.send(JSON.stringify({ t: 'ver', v: ver() })); return; }
+    if (!validKey(m.k)) { sock.send('{"t":"full"}'); return; }
     let i = this.seats.findIndex(s => s && s.k === m.k);
     if (i < 0) i = this.seats.findIndex(s => !s);
-    if (i < 0) { sock.send(JSON.stringify({ t: 'full' })); return; }
-    const old = this.seats[i];
-    this.seats[i] = old ? Object.assign(old, { sock }) : { i, k: m.k, sock, type: playerType(m.y), ready: false, ack: 0, since: 0, base: null, n: 0, cur: null, q: [], trimT: 0 };
-    if (!old) this.seats[i].pendingFx = [];
-    this.seats[i].base = null; // 新連線：第一份快照一定是完整的
-    this.seats[i].cur = null; this.seats[i].q = []; // 重連：舊連線留下的排隊指令作廢，輸入從新連線的第一筆重新開始
-    sock.send(JSON.stringify({ t: 'seat', seat: i }));
+    if (i < 0) { sock.send('{"t":"full"}'); return; }
+    const old = this.seats[i], prev = old && old.sock;
+    // 房間是空的：第一個進來的人（房主）決定比賽長度
+    if (!old && !this.seats[1 - i] && !this.timer) this.win = WINS.includes(m.w) ? m.w : 11;
+    const seat = old || { i, k: m.k, sock: null, type: playerType(m.y), name: '', ready: false, ack: 0, since: 0, base: null, n: 0, cur: null, q: [], trimT: 0, pendingFx: [], rx: 0 };
+    seat.sock = sock; seat.rx = Date.now();
+    if (m.n !== undefined) seat.name = cleanName(m.n);
+    this.seats[i] = seat;
+    seat.base = null; // 新連線：第一份快照一定是完整的
+    seat.cur = null; seat.q = []; // 重連：舊連線留下的排隊指令作廢，輸入從新連線的第一筆重新開始
+    // 同一支手機換了新連線（舊的多半是半死不活的殭屍連線）：把舊的關掉。若其實是同一個分頁被複製，請舊分頁停止重連，免得兩邊互搶
+    if (prev && prev !== sock) { prev.send('{"t":"dup"}'); prev.close(); }
+    this.touch();
+    sock.send(JSON.stringify({ t: 'seat', seat: i, live: !!this.timer }));
     // 比賽結束那一刻不在線的手機，回來時補送結果，才不會卡在球場。
     if (!this.timer && this.result && this.players.includes(m.k)) sock.send(this.result);
     this.lobby();
     if (this.timer) {
-      sock.send(JSON.stringify({ t: 'go', seat: i, resume: true }));
-      if (this.count() === 2) { this.paused = false; this.last = Date.now(); this.each(s => s.sock.send('{"t":"back"}')); }
+      sock.send(this.goMsg(seat, true));
+      if (this.count() === 2) this.resume();
+      else sock.send(JSON.stringify({ t: 'wait', s: this.waitLeft() }));
     }
+  }
+  waitLeft() { return Math.max(0, Math.ceil((this.deadline - Date.now()) / 1000)); }
+  // 放開這位玩家的所有按鍵：斷線的人不該繼續往最後的方向跑、或一直蓄力投籃
+  neutral(seat) {
+    seat.cur = null; seat.q = [];
+    if (this.sim) Object.assign(this.sim.INP[seat.i], { x: 0, z: 0, mag: 0, a: false, b: false, c: false, tapA: false, tapB: false, tapC: false, hd: 0, rs: -1 });
+  }
+  resume() {
+    const wasPaused = this.paused;
+    this.paused = false; this.deadline = 0; this.last = Date.now();
+    // 真的暫停過：從檢查球重新開始這一波，雙方都有一秒回到位置，不會一回來就被偷襲
+    if (wasPaused) { const { G } = this.sim; if (G.phase === 'play') this.sim.toCheck(G.off); else if (G.phase === 'check') G.pt = 0; }
+    this.each(s => s.sock.send('{"t":"back"}'));
   }
   close(sock) {
     const seat = this.seats.find(s => s && s.sock === sock);
     if (!seat) return;
     seat.sock = null;
-    if (!this.timer) { this.seats[seat.i] = null; this.lobby(); return; }
-    this.paused = true;
-    this.each(s => s.sock.send('{"t":"wait"}'));
-    clearTimeout(this.giveUp);
-    this.giveUp = setTimeout(() => { if (this.count() < 2) this.stop(); }, 45000);
+    if (!this.timer) { this.seats[seat.i] = null; this.lobby(); this.touch(); return; }
+    // 比賽中斷線：暫停，等他回來
+    this.neutral(seat);
+    if (!this.paused) { this.paused = true; this.deadline = Date.now() + GRACE_MS; }
+    const s = this.waitLeft();
+    this.each(o => o.sock.send(JSON.stringify({ t: 'wait', s })));
+  }
+  // 連線還開著但已經沒反應：當作斷線處理，並把它關掉
+  drop(seat) { const sock = seat.sock; this.close(sock); sock.close(); }
+  // 主動離開（按了「離開比賽」）：比賽中算認輸
+  leave(seat) {
+    const sock = seat.sock;
+    seat.sock = null;
+    if (this.timer) { this.neutral(seat); this.forfeit(seat.i, 'quit'); }
+    else { this.seats[seat.i] = null; this.lobby(); }
+    sock.close();
+  }
+  forfeit(loser, why) {
+    const { G } = this.sim;
+    this.finish(JSON.stringify({ t: 'over', score: G.score.slice(), stats: G.stats, why, win: 1 - loser }));
+    this.lobby();
+  }
+  finish(ending) {
+    this.result = ending;
+    this.players = this.seats.filter(Boolean).map(s => s.k);
+    this.each(s => s.sock.send(ending));
+    this.stop();
+  }
+  // 每秒巡房：清掉沒反應的連線、斷線等太久判定勝負、閒置太久關房
+  sweep() {
+    const now = Date.now();
+    if (this.timer) {
+      for (const s of this.seats) if (s && s.sock && now - s.rx > STALE_MS) this.drop(s);
+      if (this.paused && now >= this.deadline) {
+        const here = this.seats.filter(s => s && s.sock);
+        if (here.length === 1) this.forfeit(1 - here[0].i, 'left');
+        else if (!here.length) this.stop();
+      }
+    } else {
+      for (const s of this.seats) if (s && s.sock && now - s.rx > LOBBY_STALE_MS) this.drop(s);
+      if (this.count() && now - this.idleAt > IDLE_MS) this.each(s => { s.sock.send('{"t":"idle"}'); this.drop(s); });
+    }
+    if (!this.count() && !this.timer) { clearInterval(this.house); this.house = null; }
   }
   maybeStart() {
     if (this.timer) return;
@@ -136,11 +227,13 @@ export class Room {
     const sim = createSim(), G = sim.G;
     this.sim = sim;
     this.result = null;
-    G.online = true; G.myType = this.seats[0].type; G.foeType = this.seats[1].type;
+    G.online = true; G.win = this.win; G.myType = this.seats[0].type; G.foeType = this.seats[1].type;
     sim.newGame(false, 'reg');
-    for (const s of this.seats) { s.ready = false; s.ack = 0; s.since = 0; s.cur = null; s.q = []; s.base = null; s.pendingFx=[]; s.sock.send(JSON.stringify({ t: 'go', seat: s.i })); }
-    this.last = Date.now(); this.snapT = SNAP_S; this.paused = false;
+    const now = Date.now();
+    for (const s of this.seats) { s.ready = false; s.ack = 0; s.since = 0; s.cur = null; s.q = []; s.base = null; s.pendingFx = []; s.rx = now; s.sock.send(this.goMsg(s, false)); }
+    this.last = now; this.snapT = SNAP_S; this.paused = false; this.deadline = 0;
     this.timer = setInterval(() => this.tick(), TICK_MS);
+    this.touch();
   }
   tick() {
     if (this.paused) return;
@@ -173,13 +266,12 @@ export class Room {
       s.sock.send('{"t":"s","a":' + s.ack + ',"k":' + s.since + body + ',"fx":' + fj + '}');
     });
     if (G.phase === 'over') {
-      const ending = JSON.stringify({t:'over',score:G.score.slice(),stats:G.stats});
-      this.result = ending;
-      this.players = this.seats.filter(Boolean).map(s => s.k);
-      this.each(s => s.sock.send(ending));
-      this.stop();
+      this.finish(JSON.stringify({ t: 'over', score: G.score.slice(), stats: G.stats, win: G.score[0] > G.score[1] ? 0 : 1 }));
       this.maybeStart(); // 結算前就按了再來一場的情況
     }
   }
-  stop() { clearInterval(this.timer); this.timer = null; clearTimeout(this.giveUp); this.sim = null; for (let i = 0; i < 2; i++) if (this.seats[i] && !this.seats[i].sock) this.seats[i] = null; }
+  stop() {
+    clearInterval(this.timer); this.timer = null; this.sim = null; this.paused = false; this.deadline = 0; this.idleAt = Date.now();
+    for (let i = 0; i < 2; i++) if (this.seats[i] && !this.seats[i].sock) this.seats[i] = null;
+  }
 }

@@ -1,0 +1,11 @@
+{
+  "name": "duanhuai",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "lag": "node tools/lag-proxy.mjs",
+    "sync": "node tools/sync-sim.mjs",
+    "test": "node --test"
+  }
+}

@@ -1,6 +1,15 @@
 <!doctype html>
 <html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><style>:root{padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}body{margin:0}[hidden]{display:none!important}</style></head><body>
 <title>斷踝 1v1</title>
+<meta name="description" content="手機直式 3D 街頭籃球一對一：晃倒對手、隔扣、三分大賽，掃 QR Code 或隨機配對就能連線對打。">
+<meta name="theme-color" content="#0a1138">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="斷踝">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-180.png">
 <!-- 人物與動作：Quaternius Universal Animation Library，CC0 1.0 -->
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -42,7 +51,7 @@ body{font-family:var(--tc);-webkit-user-select:none;user-select:none;-webkit-tou
 #clockBox.low{background:var(--bad);color:var(--chalk)}
 #netPing{position:absolute;top:calc(env(safe-area-inset-top,0px) + 65px);right:max(58px,calc(env(safe-area-inset-right,0px) + 58px));padding:3px 7px;border-radius:3px;background:rgba(10,17,56,.75);color:var(--chalk);font:700 11px/1.2 var(--num);font-variant-numeric:tabular-nums;pointer-events:none}
 #netPing.warn{color:var(--you)}
-#mute{position:absolute;pointer-events:auto;top:calc(env(safe-area-inset-top,0px) + 60px);right:max(16px,env(safe-area-inset-right,0px));width:34px;height:34px;display:grid;place-items:center;padding:0;border:0;border-radius:4px;background:rgba(10,17,56,.72);color:var(--chalk);font:700 12px var(--tc)}
+#pauseBtn{position:absolute;pointer-events:auto;top:calc(env(safe-area-inset-top,0px) + 58px);right:max(12px,env(safe-area-inset-right,0px));width:42px;height:38px;display:grid;place-items:center;padding:0;border:0;border-radius:4px;background:rgba(10,17,56,.72);color:var(--chalk);font:900 15px/1 var(--num);letter-spacing:.12em}
 #hint{position:absolute;top:calc(env(safe-area-inset-top,0px) + 62px);left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 112px);padding:6px 12px;background:rgba(10,17,56,.82);border-radius:4px;font-size:13px;font-weight:700;line-height:1.35;text-align:center;text-wrap:balance;opacity:0;transition:opacity .2s}
 #hint.show{opacity:1}
 
@@ -101,7 +110,40 @@ body{font-family:var(--tc);-webkit-user-select:none;user-select:none;-webkit-tou
 #again{margin:0;padding:8px 10px;background:var(--rival);border-radius:4px;font-size:15px;font-weight:900;text-align:center}
 .how{margin:0;font-size:13px;line-height:1.55;font-weight:500}
 .how b{font-weight:900;color:var(--you)}
-#host{min-height:56px;border:0;border-radius:4px;background:var(--rival);color:var(--chalk);font:900 22px/1 var(--tc);letter-spacing:.06em}
+#netRow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#netRow button{min-width:0;min-height:52px;padding:4px 6px;border:0;border-radius:4px;font:900 17px/1.15 var(--tc)}
+#netRow small{display:block;margin-top:2px;font:500 11px/1.2 var(--tc)}
+#quick{background:var(--good);color:var(--night)}
+#host{background:var(--rival);color:var(--chalk)}
+#home{min-height:44px;border:2px solid var(--chalk);border-radius:4px;background:rgba(10,17,56,.82);color:var(--chalk);font:700 15px/1 var(--tc)}
+#menu:not(.ended) .foot:not(.net) #home{display:none}
+#menu.ended #lv,#menu.ended #netRow,#menu.ended #joinBox,#menu.ended #modes,#menu.ended .how{display:none!important}
+#menu.ended .tag{display:none}
+@media (max-height:700px){#menu.ended .logo{display:none}}
+.foot.net #modes,.foot.net #netRow,.foot.net #joinBox,.foot.net #lv{display:none!important}
+#setBtn{position:absolute;z-index:2;top:calc(env(safe-area-inset-top,0px) + 12px);right:max(16px,env(safe-area-inset-right,0px));min-height:40px;padding:0 14px;border:2px solid var(--chalk);border-radius:4px;background:rgba(10,17,56,.72);color:var(--chalk);font:700 14px/1 var(--tc)}
+#stats{display:grid;grid-template-columns:auto repeat(6,1fr);gap:0 6px;margin:0;padding:6px 10px;background:rgba(10,17,56,.82);border-radius:3px;font:700 13px/1.55 var(--tc);font-variant-numeric:tabular-nums;text-align:center}
+#stats i{font-style:normal;font-weight:500;font-size:11px;opacity:.8}
+#stats b{text-align:left;font-weight:900}
+#stats .me{color:var(--you)}
+#stats .foe{color:var(--rival)}
+#netWait{position:absolute;left:50%;top:40%;z-index:4;transform:translate(-50%,-50%);width:min(86%,320px);display:grid;gap:8px;justify-items:center;padding:16px;background:rgba(10,17,56,.95);border:2px solid var(--you);border-radius:6px;text-align:center}
+#netWait strong{font:900 22px/1.2 var(--tc)}
+#netWait span{font-size:14px;font-weight:700;line-height:1.5;white-space:pre-line}
+.btn{min-height:48px;padding:0 16px;border:2px solid var(--chalk);border-radius:4px;background:transparent;color:var(--chalk);font:700 16px/1.1 var(--tc)}
+.btn.main{border:0;min-height:54px;background:var(--you);color:var(--night);font-weight:900;font-size:20px;letter-spacing:.1em}
+.btn.warn{border-color:var(--rival);color:var(--rival)}
+.btn.warn.sure{background:var(--rival);color:var(--chalk)}
+#pause{position:absolute;inset:0;z-index:7;display:grid;align-content:safe center;gap:10px;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:calc(env(safe-area-inset-top,0px) + 20px) max(22px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 20px);background:rgba(10,17,56,.94)}
+#pause>*{width:100%;max-width:360px;justify-self:center}
+#pause h2{margin:0;font:900 30px/1.2 var(--tc);text-align:center}
+#pNote{margin:-4px 0 0;font-size:13px;font-weight:700;text-align:center;color:var(--you)}
+#pOpts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+#pOpts .btn{min-width:0;padding:0 2px;font-size:14px}
+#pName{display:grid;gap:5px;font:700 13px/1.4 var(--tc)}
+#nick{min-height:46px;padding:0 12px;border:2px solid var(--chalk);border-radius:4px;background:rgba(10,17,56,.94);color:var(--chalk);font:700 17px var(--tc)}
+#pHow{margin:0;font-size:12.5px;line-height:1.55;font-weight:500}
+#pHow b{color:var(--you);font-weight:900}
 #joinBox{display:grid;gap:5px;min-width:0}
 #joinBox label{font:700 13px/1.4 var(--tc)}
 #joinRow{display:flex;gap:8px}
@@ -119,18 +161,20 @@ body{font-family:var(--tc);-webkit-user-select:none;user-select:none;-webkit-tou
 #recap{margin:0;padding:8px 10px;background:rgba(10,17,56,.82);border-left:4px solid var(--you);border-radius:3px;font:700 13px/1.55 var(--tc)}
 #recap b{color:var(--you);font-weight:900}
 #result:not([hidden])~.how,.foot.ladder .how{display:none}
-.foot.ladder #host,.foot.ladder #joinBox{display:none!important}
-#modes{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px}
-#tutBtn,#careerBtn{min-width:0}
+.foot.ladder #netRow,.foot.ladder #joinBox,.foot.ladder #contest{display:none!important}
+#modes{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.foot.ladder #modes{grid-template-columns:2fr 1fr 1fr}
+#modes button{min-width:0}
 #tutBtn.new{background:var(--you)!important;color:var(--night)!important}
 #tut{position:absolute;top:calc(env(safe-area-inset-top,0px) + 62px);left:max(16px,env(safe-area-inset-left,0px));right:60px;padding:8px 10px;background:rgba(10,17,56,.9);border-left:4px solid var(--you);border-radius:3px}
 #tut b{display:block;font:900 15px/1.2 var(--tc);color:var(--you)}
 #tut p{margin:3px 0 6px;font-size:14px;font-weight:700;line-height:1.4}
 #tutSkip{pointer-events:auto;min-height:32px;padding:0 10px;border:1px solid var(--chalk);border-radius:3px;background:transparent;color:var(--chalk);font:700 12px/1 var(--tc)}
 #tutBtn{border-color:var(--chalk)!important;color:var(--chalk)!important}
-#modes button{min-height:48px;padding:4px 6px;border:2px solid var(--you);border-radius:4px;background:rgba(10,17,56,.82);color:var(--you);font:900 16px/1.15 var(--tc)}
+#modes button{min-height:48px;padding:4px 2px;border:2px solid var(--you);border-radius:4px;background:rgba(10,17,56,.82);color:var(--you);font:900 15px/1.15 var(--tc)}
 #modes small{display:block;font:500 11px/1.2 var(--tc);color:var(--chalk)}
 #careerBtn{border-color:var(--chalk)!important;color:var(--chalk)!important}
+#contest{border-color:var(--good)!important;color:var(--good)!important}
 #vs{position:absolute;inset:0;z-index:5;display:grid;align-content:center;justify-items:center;gap:14px;padding:24px max(16px,env(safe-area-inset-left,0px));background:rgba(10,17,56,.93);text-align:center}
 #vsStage{margin:0;font:900 18px/1 var(--num);letter-spacing:.14em;color:var(--you)}
 #vsDots{display:flex;gap:6px;margin:0;padding:0;list-style:none}
@@ -176,7 +220,7 @@ body{font-family:var(--tc);-webkit-user-select:none;user-select:none;-webkit-tou
         <div id="clockBox"><b id="clock">12</b></div>
         <div class="side rival" id="sideRival"><b id="s1">0</b><span id="rivalName">系隊學長</span><i></i></div>
       </header>
-      <button id="mute" type="button" aria-label="關閉聲音">音</button>
+      <button id="pauseBtn" type="button" aria-label="暫停與選單">II</button>
       <div id="netPing" hidden aria-label="網路延遲"></div>
       <div id="hint"></div>
       <div id="joyZone"><div id="joyBase"><div id="joyKnob"></div></div></div>
@@ -191,12 +235,14 @@ body{font-family:var(--tc);-webkit-user-select:none;user-select:none;-webkit-tou
       <div id="banner"><strong></strong><span></span></div>
     </div>
     <section id="menu" aria-label="開始畫面">
+      <button id="setBtn" type="button">設定</button>
       <div>
         <h1 class="logo" aria-label="斷踝"><span>斷踝</span><span aria-hidden="true">斷踝</span></h1>
         <p class="tag">河濱 3 號場，一對一，先到 11 分</p>
       </div>
       <div class="foot">
         <p id="result" hidden></p>
+        <div id="stats" hidden></div>
         <p id="recap" hidden></p>
         <p id="again" role="status" hidden></p>
         <fieldset id="kind" class="seg">
@@ -211,14 +257,15 @@ body{font-family:var(--tc);-webkit-user-select:none;user-select:none;-webkit-tou
           <button type="button" id="lvReg" data-lv="reg" aria-pressed="true">系隊學長</button>
           <button type="button" id="lvKing" data-lv="king" aria-pressed="false">河濱阿伯</button>
         </fieldset>
-        <button id="host" type="button" hidden>開房跟朋友打（QR Code）</button>
+        <div id="netRow" hidden><button id="quick" type="button">隨機配對<small>找線上的人打</small></button><button id="host" type="button">開房找朋友<small>QR Code／房號</small></button></div>
         <div id="joinBox">
           <label for="roomCode">已有房間代碼？直接輸入</label>
           <div id="joinRow"><input id="roomCode" type="text" inputmode="text" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="例如 AB3K" aria-label="4 至 8 碼房間代碼"><button id="joinRoom" type="button">加入</button></div>
           <p id="joinError" role="status" hidden></p>
         </div>
-        <div id="modes"><button id="ladder" type="button">河濱擂台</button><button id="tutBtn" type="button">教學</button><button id="careerBtn" type="button">生涯</button></div>
+        <div id="modes"><button id="ladder" type="button">河濱擂台</button><button id="contest" type="button">三分大賽</button><button id="tutBtn" type="button">教學</button><button id="careerBtn" type="button">生涯</button></div>
         <button id="go" type="button">開打</button>
+        <button id="home" type="button">回主選單</button>
         <p class="how"><b>招式鍵</b>配搖桿：左右變向、往後後撤、往前突破，貼近時變背後運球和轉身，按鈕會顯示現在的招式。被晃的人要在 0.26 秒內把搖桿推向同一邊。<b>操作</b>右下投籃／封蓋、右中招式／抄球、右上絕招（長按 0.25 秒）。<b>投籃</b>長按到綠區放開，離三分線越遠越難。<b>籃下</b>沒人擋才灌籃，被擋變上籃，搖桿橫推是歐洲步，上籃時再按一次是拉桿。<b>防守</b>點按 B 起跳，按住是舉手（干擾約六成、不會被騙、走得慢）。斷踝每次換球權歸零。</p>
       </div>
     </section>
@@ -247,6 +294,22 @@ body{font-family:var(--tc);-webkit-user-select:none;user-select:none;-webkit-tou
       <h2>技巧圖鑑 <span id="cCount"></span></h2><ul id="cFeats"></ul>
       <button id="cClose" type="button">回到球場</button>
     </section>
+    <div id="netWait" hidden role="status"><strong id="nwT"></strong><span id="nwS"></span><button id="nwQuit" class="btn warn" type="button">離開比賽</button></div>
+    <section id="pause" hidden aria-label="選單與設定">
+      <h2 id="pTitle">暫停</h2>
+      <p id="pNote" hidden>連線對戰不會暫停，對手還在打</p>
+      <button id="pResume" class="btn main" type="button">繼續比賽</button>
+      <div id="pOpts"><button id="mute" class="btn" type="button">聲音：開</button><button id="vib" class="btn" type="button">震動：開</button><button id="gfx" class="btn" type="button">畫質：自動</button></div>
+      <label id="pName">連線對戰顯示的名字<input id="nick" type="text" maxlength="10" autocomplete="off" spellcheck="false" placeholder="最多 10 個字，不填就顯示「朋友」"></label>
+      <fieldset id="winSeg" class="seg">
+        <legend>比賽長度（打電腦、你開的房間）</legend>
+        <button type="button" data-w="7" aria-pressed="false">7 分<small>快打</small></button>
+        <button type="button" data-w="11" aria-pressed="true">11 分<small>標準</small></button>
+        <button type="button" data-w="21" aria-pressed="false">21 分<small>長局</small></button>
+      </fieldset>
+      <p id="pHow"></p>
+      <button id="pQuit" class="btn warn" type="button">離開比賽</button>
+    </section>
     <div id="fail" hidden>球場的 3D 畫面載入失敗。請確認網路連線，再重新開啟這一頁。</div>
   </div>
 </div>
@@ -260,9 +323,14 @@ body{font-family:var(--tc);-webkit-user-select:none;user-select:none;-webkit-tou
 // 《斷踝》規則與物理：手機與伺服器跑同一份
 function createSim(){
 const clamp=(v,a,b)=>v<a?a:v>b?b:v,lerp=(a,b,t)=>a+(b-a)*t,hyp=Math.hypot,PI=Math.PI;
-const rnd=(a=1,b)=>b===undefined?Math.random()*a:a+Math.random()*(b-a);
-const gauss=()=>{let u=0;for(let i=0;i<4;i++)u+=Math.random();return(u-2)/.577};
-const pick=a=>a[Math.floor(Math.random()*a.length)];
+// 規則版本：手機和伺服器必須一樣，改了任何規則或快照欄位就要加 1（連線時會核對）
+const VER=2;
+// 亂數種子放在狀態裡、跟著快照走：手機補播時抽到的亂數和伺服器一樣，抄截、火鍋彈向、投籃進不進的預測才不會先猜錯再跳回來
+let SEED=(Math.random()*4294967296)|0;
+const rand=()=>{SEED=(SEED+0x6D2B79F5)|0;let t=Math.imul(SEED^SEED>>>15,1|SEED);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+const rnd=(a=1,b)=>b===undefined?rand()*a:a+rand()*(b-a);
+const gauss=()=>{let u=0;for(let i=0;i<4;i++)u+=rand();return(u-2)/.577};
+const pick=a=>a[Math.floor(rand()*a.length)];
 const TP={shoot:{n:'射手',ult:'神準',num:'3',w:1.17,h:1.24,v:-.1,green:1.2,cdK:1,lay:0,steal:0,block:0,react:0,dmg:1},slash:{n:'切入王',ult:'隔扣',num:'1',w:1.21,h:1.22,v:.35,green:.92,cdK:.8,lay:.6,steal:0,block:0,react:0,dmg:1},wall:{n:'鐵閘',ult:'封鎖',num:'55',w:1.33,h:1.25,v:-.15,green:.85,cdK:1.1,lay:0,steal:.05,block:.08,react:.05,dmg:.8}};
 const CD={cross:1.1,behind:1.4,step:1.5,spin:2.4,burst:2.2,halt:.9};
 const MV={cross:'變向',behind:'背後',step:'後撤',spin:'轉身',burst:'突破',halt:'急停'};
@@ -278,9 +346,10 @@ const LV={
   king:{name:'河濱阿伯',pull:.75,react:.15,read:.8,aim:.06,move:.88,steal:.8,bite:.2,block:.75,hands:.45}
 };
 const mk=(id)=>({id,human:false,x:0,z:8,y:0,vy:0,vx:0,vz:0,ax:0,az:0,fx:0,fz:-1,ix:0,iz:0,mag:0,type:'slash',en:0,ultT:0,cds:{},last:'',strikes:0,strikeT:-9,burstV:6.6,stepShot:false,swatT:-9,pull:false,ride:false,shoeLost:false,shoeX:0,shoeZ:0,shoeT:0,taunt:'',fade:false,moveT:-9,spinS:null,spinDir:1,euS:1,euHit:false,s:'free',t:0,dur:0,bal:0,tapT:-9,c:false,pc:false,pend:null,cd:0,hand:1,handV:1,drib:0,meter:0,jumped:false,stepT:-9,noPick:0,a:false,b:false,pa:false,pb:false,skid:0,tx:0,tz:8,hist:[],aiT:0,aiCd:0,aiG:null,aiGT:0,aiRel:.8,aiP:null,aiRe:9,aiB:null,aiF:false,struck:false,relDone:false,dk:null,fakeT:-10,baitGiven:false,baitUntil:0,jumpT:-10,blockChaseUntil:0,chaseUntil:0,whiffUntil:0,bufA:-9,bufB:-9,bT:-9,bWait:false,lx:0,lz:0,lT:-9,hd:0,rs:-1});
-const G={me:0,online:false,quiet:false,foeType:null,lat:[0,0],myType:'slash',cele:-1,celeT:0,finale:false,winner:-1,t:0,phase:'check',pt:0,off:0,next:1,holder:null,clock:12,needClear:false,looseT:0,score:[0,0],attract:true,level:'reg',slow:0,camT:0,camP:null,shake:0,rimKick:0,netKick:0,greenFlash:0,
+const mkStats=()=>({ankle:[0,0],green:0,fga:[0,0],fgm:[0,0],tpa:[0,0],tpm:[0,0],dunk:[0,0],blk:[0,0],stl:[0,0],grn:[0,0]});
+const G={me:0,online:false,quiet:false,solo:false,gwK:1,win:WIN,foeType:null,lat:[0,0],myType:'slash',cele:-1,celeT:0,finale:false,winner:-1,t:0,phase:'check',pt:0,off:0,next:1,holder:null,clock:12,needClear:false,looseT:0,score:[0,0],attract:true,level:'reg',slow:0,camT:0,camP:null,shake:0,rimKick:0,netKick:0,greenFlash:0,
   ball:{mode:'held',x:0,y:1,z:8,vx:0,vy:0,vz:0,make:false,pts:0,owner:0,tf:0,touched:false,q:'',spin:0},
-  p:[mk(0),mk(1)],stats:{ankle:[0,0],green:0},fx:[],hintN:{}};
+  p:[mk(0),mk(1)],stats:mkStats(),fx:[],hintN:{}};
 const mkI=()=>({x:0,z:0,mag:0,a:false,b:false,c:false,tapA:false,tapB:false,tapC:false,hd:0,rs:-1});
 const INP=[mkI(),mkI()];
 const emit=(k,d)=>{if(!G.quiet&&G.fx.length<120)G.fx.push([k,d||{}])};
@@ -316,9 +385,9 @@ function ballPos(p){
 function newGame(attract,level){
   G.finale=false;G.attract=attract;G.level=level||G.level;
   const ty=Object.keys(TP);G.p[0].type=attract?pick(ty):G.myType;G.p[1].type=G.foeType||pick(ty);
-  for(const p of G.p){p.en=0;p.ultT=0;p.cds={};p.last='';p.strikes=0;p.shoeLost=false;p.taunt='';p.pull=false;p.ride=false;p.dk=null;p.fakeT=-10;p.baitGiven=false;p.baitUntil=0;p.jumpT=-10;p.blockChaseUntil=0;p.chaseUntil=0;p.whiffUntil=0}emit('types');G.score=[0,0];G.stats={ankle:[0,0],green:0};G.fx.length=0;G.slow=0;G.camT=0;
+  for(const p of G.p){p.en=0;p.ultT=0;p.cds={};p.last='';p.strikes=0;p.shoeLost=false;p.taunt='';p.pull=false;p.ride=false;p.dk=null;p.fakeT=-10;p.baitGiven=false;p.baitUntil=0;p.jumpT=-10;p.blockChaseUntil=0;p.chaseUntil=0;p.whiffUntil=0}emit('types');G.score=[0,0];G.stats=mkStats();G.fx.length=0;G.slow=0;G.camT=0;
   G.p[0].human=!attract;G.p[1].human=G.online;
-  toCheck(attract||G.online?(Math.random()<.5?0:1):0);
+  toCheck(attract||G.online?(rand()<.5?0:1):0);
 }
 function toCheck(off){
   G.off=off;G.phase='check';G.pt=0;G.needClear=false;G.looseT=0;G.clock=12;
@@ -438,7 +507,7 @@ function greenW(p){
   if(speed(p)>3.5&&!p.ride&&!p.fade&&!p.stepShot)w*=.8;
   if(p.ride)w*=.72;
   {const r=Math.max(0,dH(p)-ARC);w/=1+K.wA*r+K.wB*r*r}
-  return w;
+  return w*G.gwK;
 }
 // 空中壓迫：貼身起跳最強，擦肩掠過或距離較遠仍有微弱影響。
 function contestPenalty(p){
@@ -475,7 +544,7 @@ function startShot(p){
   if(G.needClear&&isThree(p)){G.needClear=false;emit('cleared',{p:p.id,step:p.s==='step'})}
   if(G.needClear){emit('needClear',{p:p.id});return}
   if(canDunk(p)){
-    setS(p,'dunk');
+    setS(p,'dunk');G.stats.fga[p.id]++;
     p.dk={x0:p.x,z0:p.z,done:false,flew:false,save:false,rescued:false};
     p.vx*=.8;p.vz*=.8;
     return;
@@ -484,7 +553,7 @@ function startShot(p){
     const f=toHoop(p),d=dH(p),v=Math.max(speed(p),d>1.5?5.4:2),sl=p.mag>.3?p.ix*(-f.z)+p.iz*f.x:0;
     p.dk=null;p.pull=false;p.relDone=false;
     if(Math.abs(sl)>K.euroLat&&d>K.euroMin){setS(p,'euro');p.euS=Math.sign(sl);p.euHit=false;emit('euro',{p:p.id});emit('dust',{p:p.id,n:3});return}
-    setS(p,'layup');p.vx=f.x*v;p.vz=f.z*v;p.vy=5;p.y=.01;emit('dust',{p:p.id,n:3});
+    setS(p,'layup');G.stats.fga[p.id]++;p.vx=f.x*v;p.vz=f.z*v;p.vy=5;p.y=.01;emit('dust',{p:p.id,n:3});
     return;
   }
   if(G.t-p.tapT<.3){doFake(p);return}
@@ -512,8 +581,9 @@ function release(p){
   if(!p.jumped){p.vy=3.2;p.jumped=true}
   const penalty=contestPenalty(p),contested=penalty>0;
   const M=farFactor(p);
-  const make=Math.random()<M*(q==='green'?1-penalty:(q==='ok'?.65:.15)*(1-penalty*1.45));
-  if(q==='green'){G.greenFlash=1;gain(p,K.eGreen);if(p.human)G.stats.green++}
+  const make=rand()<M*(q==='green'?1-penalty:(q==='ok'?.65:.15)*(1-penalty*1.45));
+  G.stats.fga[p.id]++;if(isThree(p))G.stats.tpa[p.id]++;
+  if(q==='green'){G.greenFlash=1;gain(p,K.eGreen);G.stats.grn[p.id]++;if(p.human)G.stats.green++}
   emit('release',{p:p.id,q,err,early:p.meter<SHOT_MID,contested,penalty});
   setS(p,'rel');
   launch(p,make,isThree(p)?3:2,q);
@@ -524,10 +594,10 @@ function strikeSteal(p){
   const q=ballPos(h),d=hyp(q.x-(p.x+p.fx*.95),q.z-(p.z+p.fz*.95));
   const ultW=ultOn(p)&&p.type==='wall';
   const stealChance=ultW?K.stealPU:(p.type==='wall'?K.stealPW:K.stealP);
-  if(d<K.stealReach+TP[p.type].steal+(ultW?.3:0)&&Math.random()<stealChance){
+  if(d<K.stealReach+TP[p.type].steal+(ultW?.3:0)&&rand()<stealChance){
     const b=G.ball;b.x=q.x;b.y=q.y;b.z=q.z;b.mode='loose';b.make=false;b.pts=0;b.touched=true;b.tf=0;
     b.vx=(p.x-h.x)*.7+rnd(-.5,.5);b.vz=(p.z-h.z)*.7+rnd(-.5,.5);b.vy=2.6;G.holder=null;h.noPick=G.t+.32;setS(h,'stag',.22);
-    gain(p,K.eSteal);emit('steal',{p:p.id});
+    gain(p,K.eSteal);G.stats.stl[p.id]++;emit('steal',{p:p.id});
   }else{
     p.dur=ultW?.34:.62;
     if(dist(p,h)<2.4){h.whiffUntil=G.t+1.05;emit('whiffWindow',{p:h.id})}
@@ -614,7 +684,7 @@ function dunkStep(p,dt){
   if(d.save){
     const u=(G.t-d.saveAt)/DUNK_RESCUE_DURATION;
     if(!p.human&&u>=DUNK_RESCUE_CENTER){
-      resolveDunkRescue(p,Math.random()<.22+LV[G.level].pull*.28);
+      resolveDunkRescue(p,rand()<.22+LV[G.level].pull*.28);
     }else if(u>=1)resolveDunkRescue(p,false);
     return;
   }
@@ -628,7 +698,7 @@ function dunkStep(p,dt){
       return;
     }
     if(!d.done){
-      if(Math.random()<K.rescueMake)finishDunk(p);
+      if(rand()<K.rescueMake)finishDunk(p);
       else{
         d.done=true;looseBall(p,2.8);
         p.noPick=G.t+.28;setS(p,'rel');p.vy=0;
@@ -655,7 +725,7 @@ function dunkStep(p,dt){
   else if(p.t>T2+.24){p.y=Math.max(p.y,.6);setS(p,'rel');p.vy=0}
 }
 function swat(by,victim){
-  const b=G.ball,h=victim||G.p[b.owner];gain(by,30);
+  const b=G.ball,h=victim||G.p[b.owner];gain(by,30);G.stats.blk[by.id]++;
   if(G.holder){const q=ballPos(G.holder);b.x=q.x;b.y=q.y;b.z=q.z}
   b.mode='pin';b.by=by.id;b.pinT=G.t+.075;b.make=false;b.pts=0;b.touched=true;b.tf=0;b.vx=b.vy=b.vz=0;G.holder=null;h.noPick=G.t+.5;by.swatT=G.t;
   by.blockChaseUntil=G.t+2.3;G.slow=Math.max(G.slow,.15);G.shake=Math.max(G.shake,.65);emit('block',{p:by.id});
@@ -693,7 +763,7 @@ function upd(p,dt){
     case'spin':{const f=toHoop(p),u=clamp(p.t/.48,0,1),a=1.15*(1-u),x=p.spinS.x*a+f.x*(.45+u),z=p.spinS.z*a+f.z*(.45+u),l=hyp(x,z)||1;p.vx=x/l*4.8;p.vz=z/l*4.8;if(p.t>.48){setS(p,'free');p.drib=.46}break}
     case'euro':{const f=toHoop(p),sx=-f.z*p.euS,sz=f.x*p.euS,k=p.t<.21?1:-1;p.vx=sx*k*4.9+f.x*3.3;p.vz=sz*k*4.9+f.z*3.3;
       if(!p.euHit&&p.t>.21){p.euHit=true;strike(p,{x:-sx,z:-sz},.95);emit('dust',{p:p.id,n:3})}
-      if(p.t>.42){setS(p,'layup');p.vx=f.x*5;p.vz=f.z*5;p.vy=5;p.y=.01;p.relDone=false;p.pull=false}break}
+      if(p.t>.42){setS(p,'layup');G.stats.fga[p.id]++;p.vx=f.x*5;p.vz=f.z*5;p.vy=5;p.y=.01;p.relDone=false;p.pull=false}break}
     case'halt':fric(12);if(p.t>.16)setS(p,'free');break;
     case'hold':fric(p.ride||p.fade?.8:p.stepShot?1.6:9);p.meter+=dt/(p.ride||p.fade||p.stepShot?.6:.82);if(!p.jumped&&p.t>.33){p.jumped=true;p.vy=4;p.y=.01}if(p.meter>=1)release(p);break;
     case'rel':fric(3);if(p.y===0&&p.vy===0&&p.t>.05)setS(p,'free');break;
@@ -708,7 +778,7 @@ function upd(p,dt){
         p.relDone=true;const o=opp(p),g=dist(p,o);let pr=.96;
         if(!DOWN.has(o.s)&&g<1.25)pr=.72;if(o.y>.3&&g<1.6)pr=.55;
         if(p.dk?.rescued)pr=.83;else if(p.pull)pr=.5;
-        const mk=Math.random()<pr;emit('release',{p:p.id,q:'lay'});
+        const mk=rand()<pr;emit('release',{p:p.id,q:'lay'});
         launch(p,mk,2,'lay',.5);
       }break;
     case'dunk':dunkStep(p,dt);break;
@@ -780,7 +850,7 @@ function collide(){
 }
 function scored(owner,pts,kind){
   if(G.phase==='dead'||G.phase==='over')return;
-  G.score[owner]+=pts;G.ball.pts=0;G.cele=owner;G.celeT=G.t;gain(G.p[owner],K.eScore);{const P=G.p[owner];if(!P.human&&Math.random()<.55){P.taunt=pick(['fold','dance','cele']);P.tauntT=G.t+.3}}
+  G.score[owner]+=pts;G.stats.fgm[owner]++;if(pts===3)G.stats.tpm[owner]++;if(kind==='dunk')G.stats.dunk[owner]++;G.ball.pts=0;G.cele=owner;G.celeT=G.t;gain(G.p[owner],K.eScore);{const P=G.p[owner];if(!P.human&&rand()<.55){P.taunt=pick(['fold','dance','cele']);P.tauntT=G.t+.3}}
   emit('score',{p:owner,pts,kind});
   G.phase='dead';G.pt=1.35;G.next=1-owner;G.holder=null;
 }
@@ -789,14 +859,14 @@ function stepBall(dt){
   if(b.mode==='held'&&G.holder){const q=ballPos(G.holder);b.x=q.x;b.y=q.y;b.z=q.z;return}
   if(b.mode==='pin'){
     const d=G.p[b.by],k=1-Math.exp(-46*dt);b.x+=(d.x+d.fx*.42-b.x)*k;b.y+=(d.y+2.62-b.y)*k;b.z+=(d.z+d.fz*.42-b.z)*k;
-    if(G.t>=b.pinT){const side=Math.random()<.5?-1:1,power=rnd(3.3,4.7);b.mode='loose';b.vx=-d.fz*side*power+d.fx*1.25;b.vz=d.fx*side*power+d.fz*1.25;b.vy=-7.5;emit('smack',{p:b.by})}
+    if(G.t>=b.pinT){const side=rand()<.5?-1:1,power=rnd(3.3,4.7);b.mode='loose';b.vx=-d.fz*side*power+d.fx*1.25;b.vz=d.fx*side*power+d.fz*1.25;b.vy=-7.5;emit('smack',{p:b.by})}
     return;
   }
   b.tf+=dt;const py=b.y;
   b.vy-=GR*dt;b.x+=b.vx*dt;b.y+=b.vy*dt;b.z+=b.vz*dt;
   const dx=b.x-HOOP.x,dz=b.z-HOOP.z,hr=hyp(dx,dz)||1e-4;
   if(py>RIMY&&b.y<=RIMY&&hr<RIM-.02&&b.pts>0){
-    b.touched=b.touched;G.netKick=1;
+    G.netKick=1;
     if(b.q==='green'&&!b.touched)G.greenFlash=1;
     scored(b.owner,b.pts,b.q);b.vx*=.2;b.vz*=.2;b.vy*=.55;
     if(b.mode==='air')b.mode='loose';
@@ -829,9 +899,9 @@ function stepBall(dt){
     if(d.y>K.blockY&&hyp(b.x-(d.x+d.fx*.25),b.y-(d.y+2.7),b.z-(d.z+d.fz*.25))<(.79+TP[d.type].block+wl)*(b.ride||1))swat(d,G.p[b.owner]);
   }
   if(b.mode==='loose'&&G.phase==='play'){
-    const order=Math.random()<.5?[0,1]:[1,0];
+    const order=rand()<.5?[0,1]:[1,0];
     for(const i of order){
-      const p=G.p[i];if(G.t<p.noPick||p.s==='fall'||p.s==='getup'||p.s==='dunk')continue;
+      const p=G.p[i];if(G.t<p.noPick||p.s==='fall'||p.s==='getup'||p.s==='dunk'||(G.solo&&!p.human))continue;
       if(hyp(b.x-p.x,b.z-p.z)<.82&&b.y<p.y+2.5){give(p);break}
     }
   }
@@ -839,7 +909,7 @@ function stepBall(dt){
 /* 對手 AI：走同一套輸入與慣性，所以他也會滑、也會被你騙 */
 function ai(p,dt){
   p.a=false;
-  if(G.phase!=='play'){p.ix=p.iz=p.mag=0;p.b=false;p.c=false;return}
+  if(G.phase!=='play'||G.solo){p.ix=p.iz=p.mag=0;p.b=false;p.c=false;return}
   const L=LV[G.level],o=opp(p);
   if(G.holder===p)aiOff(p,o,L,dt);else if(G.holder===o)aiDef(p,o,L,dt);else aiLoose(p,o,L);
 }
@@ -847,7 +917,7 @@ function steerTo(p,tx,tz,soft){const dx=tx-p.x,dz=tz-p.z,l=hyp(dx,dz);if(l<.03){
 function aiOff(p,o,L,dt){
   if(p.s==='hold'){p.b=p.meter<p.aiRel;return}
   p.b=false;p.c=false;
-  if(p.s==='layup'){if(o.y>.12&&dist(p,o)<2.2&&!p.pull&&!p.aiPulled){p.aiPulled=true;p.b=Math.random()<L.pull}return}
+  if(p.s==='layup'){if(o.y>.12&&dist(p,o)<2.2&&!p.pull&&!p.aiPulled){p.aiPulled=true;p.b=rand()<L.pull}return}
   p.aiPulled=false;
   if(p.en>=100){const ty=p.type,dd=dH(p);if((ty==='slash'&&dd<5)||(ty==='shoot'&&dd<ARC+1)){p.c=true}}
   if(p.shoeLost&&G.t>p.shoeT&&hyp(p.x-p.shoeX,p.z-p.shoeZ)<4.5){steerTo(p,p.shoeX,p.shoeZ,.5);p.aiT-=dt;return}
@@ -863,22 +933,22 @@ function aiOff(p,o,L,dt){
   p.aiT-=dt;
   if(p.aiT>0||!canAct(p))return;
   p.aiT=rnd(.14,.36);
-  if(o.strikes>0&&!DOWN.has(o.s)&&p.cd<=0&&Math.random()<.6){const s=p.hand>0?-1:1;p.ix=-f.z*s;p.iz=f.x*s;p.mag=1;p.a=true;return}
+  if(o.strikes>0&&!DOWN.has(o.s)&&p.cd<=0&&rand()<.6){const s=p.hand>0?-1:1;p.ix=-f.z*s;p.iz=f.x*s;p.mag=1;p.a=true;return}
   if(G.needClear)return;
   const shoot=()=>{
-    if(d>=LAY&&Math.random()<.13){doFake(p);return}
+    if(d>=LAY&&rand()<.13){doFake(p);return}
     p.b=true;p.aiRel=SHOT_MID+gauss()*L.aim;
-    if(d>=LAY&&gap<(L.fadeGap||2)&&Math.random()<(L.fade||.45)){p.ix=-f.x;p.iz=-f.z;p.mag=1}
-    else if(d<LAY&&d>1.7&&gap<2.4&&Math.random()<.5){const s=Math.random()<.5?1:-1;p.ix=-f.z*s;p.iz=f.x*s;p.mag=1}
+    if(d>=LAY&&gap<(L.fadeGap||2)&&rand()<(L.fade||.45)){p.ix=-f.x;p.iz=-f.z;p.mag=1}
+    else if(d<LAY&&d>1.7&&gap<2.4&&rand()<.5){const s=rand()<.5?1:-1;p.ix=-f.z*s;p.iz=f.x*s;p.mag=1}
   };
   if(d<LAY&&(d<2.6||gap>1.6||speed(p)>3.2)){shoot();return}
   if(G.clock<1.8){shoot();return}
-  if(down&&(gap>2.2)&&d<ARC+.8&&Math.random()<.4){shoot();return}
-  if(!L.post&&gap>2.4&&d<ARC+1&&Math.random()<.5){shoot();return}
-  if(!L.post&&gap>1.75&&d>3.2&&d<ARC+.2&&Math.random()<.3){shoot();return}
-  if(gap<2.9&&Math.random()<L.move){
-    const r=Math.random()+(L.drive||0);
-        if(r<.55){const s=Math.random()<.5?1:-1;p.ix=-f.z*s;p.iz=f.x*s;p.mag=1}
+  if(down&&(gap>2.2)&&d<ARC+.8&&rand()<.4){shoot();return}
+  if(!L.post&&gap>2.4&&d<ARC+1&&rand()<.5){shoot();return}
+  if(!L.post&&gap>1.75&&d>3.2&&d<ARC+.2&&rand()<.3){shoot();return}
+  if(gap<2.9&&rand()<L.move){
+    const r=rand()+(L.drive||0);
+        if(r<.55){const s=rand()<.5?1:-1;p.ix=-f.z*s;p.iz=f.x*s;p.mag=1}
     else if(r<.75&&d<ARC+1.4){p.ix=-f.x;p.iz=-f.z;p.mag=1}
     else{p.ix=f.x;p.iz=f.z;p.mag=1}
     p.a=true;
@@ -888,7 +958,7 @@ function aiDef(p,o,L,dt){
   const s=past(o,L.react),nx=HOOP.x-s.x,nz=HOOP.z+.4-s.z,nl=hyp(nx,nz)||1,sag=hyp(s.x-HOOP.x,s.z-HOOP.z)>ARC+1.3?2.5:1.5;
   steerTo(p,s.x+nx/nl*sag,s.z+nz/nl*sag,.7);
   if(p.pend){
-    if(p.pend!==p.aiP){p.aiP=p.pend;p.aiRe=Math.random()<L.read?L.react+rnd(0,.05):9}
+    if(p.pend!==p.aiP){p.aiP=p.pend;p.aiRe=rand()<L.read?L.react+rnd(0,.05):9}
     if(p.pend.t>=p.aiRe){p.ix=p.pend.D.x;p.iz=p.pend.D.z;p.mag=1}
   }
   p.b=false;p.c=false;p.aiCd-=dt;
@@ -899,17 +969,17 @@ function aiDef(p,o,L,dt){
   if(p.s!=='free')return;
   // 規則：點按 B＝起跳，按住＝舉手。AI 起跳只送一個脈衝，舉手則一路按住直到對手出手
   if(o.s==='hold'&&gap<2.8){
-    if(!p.aiB)p.aiB={at:rnd(.25,.5),hands:Math.random()<(L.hands??L.block*.5),fired:false};
+    if(!p.aiB)p.aiB={at:rnd(.25,.5),hands:rand()<(L.hands??L.block*.5),fired:false};
     if(p.aiB.hands){if(o.t>=.04)p.b=true}
     else if(!p.aiB.fired&&o.t>=p.aiB.at){p.aiB.fired=true;p.b=true}
   }
-  else if(o.s==='fake'&&gap<2.8&&!p.aiF){p.aiF=true;if(Math.random()<L.bite){p.b=true;if(o.human)emit('bit',{p:o.id})}}
-  else if((o.s==='layup'||o.s==='dunk')&&gap<2.2&&!p.aiB){p.aiB={at:0};p.b=Math.random()<L.block}
-  if(gap<1.7&&p.aiCd<=0&&Math.random()<L.steal*dt*1.4){p.a=true;p.aiCd=1.3}
+  else if(o.s==='fake'&&gap<2.8&&!p.aiF){p.aiF=true;if(rand()<L.bite){p.b=true;if(o.human)emit('bit',{p:o.id})}}
+  else if((o.s==='layup'||o.s==='dunk')&&gap<2.2&&!p.aiB){p.aiB={at:0};p.b=rand()<L.block}
+  if(gap<1.7&&p.aiCd<=0&&rand()<L.steal*dt*1.4){p.a=true;p.aiCd=1.3}
 }
 function aiLoose(p,o,L){
   p.c=false;const b=G.ball;steerTo(p,b.x+b.vx*.25,b.z+b.vz*.25,.5);p.b=false;
-  if(p.s==='free'&&b.y>2.4&&b.y<4.2&&hyp(b.x-p.x,b.z-p.z)<1.2&&Math.random()<.04)p.b=true;
+  if(p.s==='free'&&b.y>2.4&&b.y<4.2&&hyp(b.x-p.x,b.z-p.z)<1.2&&rand()<.04)p.b=true;
 }
 function step(dt){
   G.t+=dt;
@@ -949,7 +1019,7 @@ function step(dt){
     G.pt-=dt;
     if(G.pt<=0){
       const top=Math.max(...G.score);
-      if(top>=WIN){if(G.attract){G.score=[0,0];toCheck(G.next)}else{G.phase='over';emit('over')}}
+      if(top>=G.win){if(G.attract){G.score=[0,0];toCheck(G.next)}else{G.phase='over';emit('over')}}
       else toCheck(G.next);
     }
   }
@@ -968,16 +1038,16 @@ const PK=['x','z','y','vy','vx','vz','ax','az','fx','fz','ix','iz','mag','s','t'
 const BK=['mode','x','y','z','vx','vy','vz','make','pts','owner','tf','touched','q','safe','ride','by','pinT'];
 function snap(){
   const b=G.ball;
-  return{g:[G.t,G.phase,G.pt,G.off,G.next,G.holder?G.holder.id:-1,G.clock,G.needClear,G.score,G.slow,G.cele,G.celeT,G.finale,G.winner,G.camT,G.camP?G.camP.id:-1,G.rimKick,G.netKick,G.greenFlash,G.shake,G.looseT].map(n3),
+  return{g:[G.t,G.phase,G.pt,G.off,G.next,G.holder?G.holder.id:-1,G.clock,G.needClear,G.score,G.slow,G.cele,G.celeT,G.finale,G.winner,G.camT,G.camP?G.camP.id:-1,G.rimKick,G.netKick,G.greenFlash,G.shake,G.looseT,SEED,G.win].map(n3),
     b:BK.map(k=>n3(b[k])),p:G.p.map(p=>[PK.map(k=>n3(p[k])),p.cds,p.pend,p.spinS,p.dk])};
 }
 function restore(st){
   const g=st.g;[G.t,G.phase,G.pt,G.off,G.next]=g;G.holder=g[5]<0?null:G.p[g[5]];
-  G.clock=g[6];G.needClear=g[7];G.score=g[8];G.slow=g[9];G.cele=g[10];G.celeT=g[11];G.finale=g[12];G.winner=g[13];G.camT=g[14];G.camP=g[15]<0?null:G.p[g[15]];G.rimKick=g[16];G.netKick=g[17];G.greenFlash=g[18];G.shake=g[19];G.looseT=g[20]||0;
+  G.clock=g[6];G.needClear=g[7];G.score=g[8];G.slow=g[9];G.cele=g[10];G.celeT=g[11];G.finale=g[12];G.winner=g[13];G.camT=g[14];G.camP=g[15]<0?null:G.p[g[15]];G.rimKick=g[16];G.netKick=g[17];G.greenFlash=g[18];G.shake=g[19];G.looseT=g[20]||0;if(g[21]!==undefined)SEED=g[21]|0;if(g[22])G.win=g[22];
   BK.forEach((k,i)=>{G.ball[k]=st.b[i]});
   G.p.forEach((p,i)=>{const r=st.p[i];PK.forEach((k,j)=>{p[k]=r[0][j]});p.cds=r[1];p.pend=r[2];p.spinS=r[3];p.dk=r[4]});
 }
-return{clamp,lerp,hyp,PI,rnd,gauss,pick,TP,CD,MV,LV,H,GR,BR,RIMY,HOOP,RIM,BOARDZ,W,D,ARC,CORNER,WIN,LAY,SHOT_MID,G,INP,step,advance,snap,restore,newGame,toCheck,knock,setS,startShot,ballPos,opp,dH,isThree,toHoop,dist,speed,DOWN,canDunk,shotKind,laneBlocked,farFactor,K,moveKind,spinReady,ultOn,greenW,contestPenalty,DUNK_RESCUE_DURATION,DUNK_RESCUE_CENTER,DUNK_RESCUE_HALF};
+return{VER,clamp,lerp,hyp,PI,rnd,gauss,pick,TP,CD,MV,LV,H,GR,BR,RIMY,HOOP,RIM,BOARDZ,W,D,ARC,CORNER,WIN,LAY,SHOT_MID,G,INP,step,advance,snap,restore,newGame,toCheck,knock,setS,startShot,ballPos,opp,dH,isThree,toHoop,dist,speed,DOWN,canDunk,shotKind,laneBlocked,farFactor,K,moveKind,spinReady,ultOn,greenW,contestPenalty,DUNK_RESCUE_DURATION,DUNK_RESCUE_CENTER,DUNK_RESCUE_HALF};
 }
 
 function decodeRig(hdr,b64){
@@ -1013,7 +1083,9 @@ function boot(saved){
 const $=s=>document.querySelector(s);
 if(!window.THREE){$('#fail').hidden=false;return}
 const S=createSim();
-const{clamp,lerp,hyp,PI,rnd,gauss,pick,TP,CD,MV,LV,H,GR,BR,RIMY,HOOP,RIM,BOARDZ,W,D,ARC,CORNER,WIN,LAY,SHOT_MID,G,INP,step,advance,snap,restore,newGame,toCheck,knock,setS,startShot,ballPos,opp,dH,isThree,toHoop,dist,speed,DOWN,canDunk,shotKind,farFactor,moveKind,spinReady,ultOn,greenW,contestPenalty,DUNK_RESCUE_DURATION,DUNK_RESCUE_CENTER,DUNK_RESCUE_HALF}=S;
+const{VER,clamp,lerp,hyp,PI,TP,CD,MV,LV,H,GR,BR,RIMY,HOOP,RIM,BOARDZ,W,D,ARC,CORNER,WIN,LAY,SHOT_MID,G,INP,step,advance,snap,restore,newGame,toCheck,knock,setS,startShot,ballPos,opp,dH,isThree,toHoop,dist,speed,DOWN,canDunk,shotKind,farFactor,moveKind,spinReady,ultOn,greenW,contestPenalty,DUNK_RESCUE_DURATION,DUNK_RESCUE_CENTER,DUNK_RESCUE_HALF}=S;
+// 規則裡的亂數是可重現的（種子跟著連線快照走）；畫面特效用自己的亂數，才不會動到規則的亂數順序
+const rnd=(a=1,b)=>b===undefined?Math.random()*a:a+Math.random()*(b-a),pick=a=>a[Math.floor(Math.random()*a.length)];
 let Inp=INP[0];
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -1399,8 +1471,8 @@ function updBody(B,p,dt,dtR){
 }
 
 /* ───────────── 聲音：全部即時合成，不用下載音檔 ───────────── */
-let AC=null,muted=false,master=null,wet=null,noiseB=null,ambOn=false;
-try{muted=localStorage.getItem('dh-muted')==='1'}catch(e){}
+let AC=null,muted=false,vibOn=true,master=null,wet=null,noiseB=null,ambOn=false;
+try{muted=localStorage.getItem('dh-muted')==='1';vibOn=localStorage.getItem('dh-vib')!=='0'}catch(e){}
 function audio(){
   try{
     if(!AC){
@@ -1455,7 +1527,7 @@ const SFX={
   tsk:()=>{noise(.05,.14,5200,1);noise(.05,.12,5600,1,'bandpass',.12)},
   ult:()=>{noise(.55,.2,300,1,'bandpass',0,4800,true);tone(110,220,.5,.1,'sawtooth');tone(165,330,.5,.08,'sawtooth');tone(880,880,.3,.05,'triangle',.45,true)}
 };
-const buzz=ms=>{if(G.attract)return;try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}};
+const buzz=ms=>{if(G.attract||!vibOn)return;try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}};
 
 /* ───────────── 介面 ───────────── */
 const hud=$('#hud'),contestInfo=$('#contestInfo'),bannerEl=$('#banner'),bStrong=bannerEl.querySelector('strong'),bSpan=bannerEl.querySelector('span'),hintEl=$('#hint'),meterEl=$('#meter'),mGreen=$('#mGreen'),mFill=$('#mFill'),btnA=$('#btnA'),btnB=$('#btnB'),clockEl=$('#clock'),clockBox=$('#clockBox'),menu=$('#menu'),joyBase=$('#joyBase'),joyKnob=$('#joyKnob'),joyZone=$('#joyZone');
@@ -1503,7 +1575,9 @@ const lvOf=xp=>{let l=1;while(xp>=need(l)){xp-=need(l);l++}return{l,xp,n:need(l)
 const POOL=[['ankle',2,'放倒對手 2 次'],['green',5,'打出 5 次完美出手'],['three',3,'投進 3 顆三分'],['dunk',4,'灌籃 4 次'],['block',2,'蓋掉 2 球'],['steal',3,'抄截 3 次'],['win',2,'贏 2 場'],['stage',2,'擂台闖過 2 關'],['bait',1,'騙對手起跳 1 次'],['stepThree',1,'投進 1 顆後撤三分'],['fade',1,'投進 1 顆後仰跳投'],['ride',1,'投進 1 顆騎馬射箭'],['pullMake',1,'拉桿投進 1 球'],['combo',2,'連招突破 2 次']];
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()};
 const dailies=day=>{let h=7;for(const c of day)h=(h*31+c.charCodeAt(0))>>>0;const a=POOL.slice(),out=[];for(let i=0;i<3;i++){h=(h*2654435761+11)>>>0;out.push(a.splice(h%a.length,1)[0])}return out};
-const Save=(()=>{let s=null;try{s=JSON.parse(localStorage.getItem('dh-save-v1'))}catch(e){}return Object.assign({xp:0,games:0,wins:0,f:{},best:0,beat:{},champ:0,num:'',day:'',dc:{},dd:[]},s&&typeof s==='object'?s:{})})();
+const Save=(()=>{let s=null;try{s=JSON.parse(localStorage.getItem('dh-save-v1'))}catch(e){}return Object.assign({xp:0,games:0,wins:0,f:{},best:0,beat:{},champ:0,num:'',day:'',dc:{},dd:[],name:'',win:11,tp:0,ow:0,ol:0},s&&typeof s==='object'?s:{})})();
+if(![7,11,21].includes(Save.win))Save.win=11;
+if(typeof Save.name!=='string')Save.name='';
 const store=()=>{try{localStorage.setItem('dh-save-v1',JSON.stringify(Save))}catch(e){}};
 const rollDay=()=>{const d=today();if(Save.day!==d){Save.day=d;Save.dc={};Save.dd=[]}};
 
@@ -1521,7 +1595,7 @@ const TUT=[
 LV.tut={name:'陪練學弟',pull:0,react:.5,read:.1,aim:.18,move:0,steal:0,bite:1,block:0};
 const Tut={on:false,i:0,s:0,off:0,pick:'reg',
   start(){
-    this.on=true;this.pick=G.level;this.i=-1;Foe.kit=null;
+    this.on=true;this.pick=G.level;this.i=-1;Foe.kit=null;G.win=11;
     Inp.x=Inp.z=Inp.mag=0;Inp.a=Inp.b=false;startAmb();showHud('學弟');
     newGame(false,'tut');dressUp();Object.assign(G.hintN,{atk:9,def:9,foe:9,shoe:9});
     $('#tut').hidden=false;this.next();
@@ -1550,7 +1624,7 @@ const Tut={on:false,i:0,s:0,off:0,pick:'reg',
   stop(done){
     this.on=false;G.level=this.pick;$('#tut').hidden=true;
     if(done){const first=!Save.tut;if(first){Save.tut=1;Save.xp+=100}store();const el=$('#recap');el.innerHTML='<b>教學完成</b>'+(first?' +100 經驗':'')+'，去河濱擂台試試吧';el.hidden=false}
-    hud.dataset.off='1';menu.hidden=false;newGame(true);dressUp();Career.paint();
+    toMenu();
   }
 };
 /* 擂台八關。傳說關用對手打法重現球星的招牌，血量與規則不變。 */
@@ -1581,7 +1655,7 @@ const Ladder={on:false,i:0,pick:'reg',fighting:false,
   fight(){
     const s=STAGES[this.i];$('#vs').hidden=true;this.fighting=true;
     Inp.x=Inp.z=Inp.mag=0;Inp.a=Inp.b=false;startAmb();showHud(s.n.split(' ')[0]);
-    Foe.kit=s.kit||null;G.foeType=s.type;Career.begin();newGame(false,'s'+this.i);G.foeType=null;dressUp();
+    Foe.kit=s.kit||null;G.foeType=s.type;G.win=11;Career.begin();newGame(false,'s'+this.i);G.foeType=null;dressUp();
     try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}
   },
   stop(){this.on=false;this.fighting=false;G.level=this.pick;Foe.kit=null;$('#vs').hidden=true;Career.paint()},
@@ -1600,8 +1674,9 @@ const Ladder={on:false,i:0,pick:'reg',fighting:false,
 const Career={M:{},deficit:0,tag:'',
   init(){
     this.goText=$('#go').textContent;rollDay();store();
-    $('#ladder').addEventListener('click',()=>{audio();if(Net.on)return;if(Ladder.on){Ladder.stop();$('#go').textContent=Career.goText;return}Ladder.on=true;Ladder.i=0;Ladder.pick=G.level;Career.paint();Ladder.card()});
-    $('#tutBtn').addEventListener('click',()=>{audio();if(Net.on)return;Tut.start()});
+    $('#ladder').addEventListener('click',()=>{audio();if(Net.on||Net.quickOn)return;if(Ladder.on){Ladder.stop();$('#go').textContent=Career.goText;return}Ladder.on=true;Ladder.i=0;Ladder.pick=G.level;Career.paint();Ladder.card()});
+    $('#tutBtn').addEventListener('click',()=>{audio();if(Net.on||Net.quickOn)return;Tut.start()});
+    $('#contest').addEventListener('click',()=>{audio();if(Net.on||Net.quickOn||Ladder.on)return;Contest.start()});
     $('#tutSkip').addEventListener('click',()=>Tut.stop(false));
     $('#vsGo').addEventListener('click',()=>Ladder.fight());
     $('#vsQuit').addEventListener('click',()=>{Ladder.stop();$('#go').textContent=Career.goText});
@@ -1611,8 +1686,9 @@ const Career={M:{},deficit:0,tag:'',
   },
   paint(){
     const L=lvOf(Save.xp),b=$('#ladder');
-    b.innerHTML=Ladder.on?`結束這輪擂台<small>目前第 ${Ladder.i+1} 關</small>`:`河濱擂台<small>${Save.best?'最佳 '+Save.best+' / 8 關':'連闖八關，對決三位傳說'}</small>`;
+    b.innerHTML=Ladder.on?`結束這輪擂台<small>目前第 ${Ladder.i+1} 關</small>`:`河濱擂台<small>${Save.best?'最佳 '+Save.best+' / 8 關':'連闖八關'}</small>`;
     $('#careerBtn').innerHTML=`生涯<small>Lv.${L.l}</small>`;
+    $('#contest').innerHTML=`三分大賽<small>${Save.tp?'最佳 '+Save.tp+' 分':'25 球挑戰'}</small>`;
     $('#ladder').hidden=/[?&]r=/.test(location.search);
     $('#tutBtn').classList.toggle('new',!Save.tut);
     $('#lv').hidden=Ladder.on||/[?&]r=/.test(location.search);
@@ -1648,6 +1724,7 @@ const Career={M:{},deficit:0,tag:'',
     for(const k in M)if(FEATS[k])Save.f[k]=(Save.f[k]||0)+M[k];
     let xp=20+(win?30:0)+fresh.length*30+Math.min(40,(M.ankle||0)*10+(M.block||0)*4+(M.green||0)*2),line='';
     Save.games++;if(win)Save.wins++;
+    if(Net.on){if(win)Save.ow++;else Save.ol++}
     if(Ladder.on&&Ladder.fighting){
       if(win){xp+=40+Ladder.i*15;M.stage=1;const s=STAGES[Ladder.i];if(s.boss&&!Save.beat[Ladder.i])xp+=200}
       line=Ladder.after(win);
@@ -1671,7 +1748,7 @@ const Career={M:{},deficit:0,tag:'',
   },
   page(){
     rollDay();const L=lvOf(Save.xp);
-    $('#cHead').innerHTML=`<strong>Lv.${L.l} ${L.title}</strong><span>${Save.games} 場 · ${Save.wins} 勝 · 擂台最佳 ${Save.best} / 8${Save.champ?' · 河濱之王 ×'+Save.champ:''}</span><div id="cBar"><i style="width:${Math.round(L.xp/L.n*100)}%"></i></div>`;
+    $('#cHead').innerHTML=`<strong>Lv.${L.l} ${L.title}</strong><span>${Save.games} 場 · ${Save.wins} 勝 · 擂台最佳 ${Save.best} / 8${Save.champ?' · 河濱之王 ×'+Save.champ:''}${Save.ow+Save.ol?` · 連線 ${Save.ow} 勝 ${Save.ol} 敗`:''}${Save.tp?` · 三分大賽最佳 ${Save.tp}`:''}</span><div id="cBar"><i style="width:${Math.round(L.xp/L.n*100)}%"></i></div>`;
     $('#cDaily').innerHTML=dailies(Save.day).map(([k,n,t],i)=>{const v=Math.min(n,Save.dc[k]||0);return `<li class="${Save.dd.includes(i)?'done':''}"><b>${t}</b><small>${v} / ${n} · 完成 +60 經驗</small></li>`}).join('');
     $('#cLegend').innerHTML=LEGEND.map(([i,n,no])=>`<li class="${Save.beat[i]?'done':'off'}"><b>${n}</b><small>${Save.beat[i]?'已擊敗，解鎖 #'+no+' 球衣號碼':'擂台第 '+(i+1)+' 關'}</small></li>`).join('');
     const nums=[['','預設',true],...LEGEND.map(([i,,no])=>[no,'#'+no,!!Save.beat[i]])];
@@ -1683,10 +1760,10 @@ const Career={M:{},deficit:0,tag:'',
 };
 window.__career={Save,Ladder,Career,STAGES,dailies,G,Tut,TUT};
 function drain(){
-  Tut.tick();
+  Tut.tick();Contest.tick();
   for(const[k,d]of G.fx){
     const me=d.p===G.me,P=G.p[d.p];
-    if(Tut.on)Tut.ev(k,d);else Career.ev(k,d);
+    if(Tut.on)Tut.ev(k,d);else if(Contest.on){Contest.ev(k,d);if(k==='score'||k==='clock'||k==='looseTimeout'||k==='check'||k==='switch')continue}else Career.ev(k,d);
     switch(k){
       case'check':hud.dataset.mode=d.off===G.me?'off':'def';if(d.off===G.me)hint('atk','推搖桿選方向，招式鍵上的字就是現在的招式，按下去出招。');else hint('def',G.online?'地上出現紅箭頭就跟方向推；朋友對戰連續三次失誤才會斷踝。對手出手時點 B 起跳，按住 B 是舉手。':'地上出現紅箭頭時，把搖桿推向同一邊。連兩次跟不上才會斷踝。對手出手時點 B 起跳，按住 B 是舉手。');break;
       case'squeak':SFX.squeak(d.soft?.035:.06);if(P)puff(P.x,.1,P.z,d.soft?1:2,.6);break;
@@ -1759,63 +1836,129 @@ function drain(){
   G.fx.length=0;
 }
 let overT=0;
+function paintStats(){
+  const S=G.stats,el=$('#stats'),me=G.me,foe=1-me;
+  if(!S||!S.fga){el.hidden=true;return}
+  const cell=(tag,t,c)=>{const e=document.createElement(tag);e.textContent=t;if(c)e.className=c;el.append(e)};
+  const row=(name,i,c)=>{cell('b',name,c);for(const t of[S.fgm[i]+'/'+S.fga[i],S.tpm[i]+'/'+S.tpa[i],S.dunk[i],S.blk[i],S.stl[i],S.ankle[i]])cell('span',t,c)};
+  el.textContent='';cell('i','');for(const t of['投籃','三分','灌籃','火鍋','抄截','放倒'])cell('i',t);
+  row('你',me,'me');row(Net.on?'對手':'電腦',foe,'foe');el.hidden=false;
+}
 function gameOver(){
   if(G.finale)return;
-  const a=G.score[G.me],b=G.score[1-G.me],win=a>b,res=$('#result');
+  const a=G.score[G.me],b=G.score[1-G.me],why=Net.on?Net.why:'',win=why&&Net.fw!==null?Net.fw:a>b,res=$('#result');
   res.hidden=false;res.textContent=`${a} : ${b}`;
-  const sm=document.createElement('small');sm.textContent=`${win?'你贏了':(Net.on?'朋友':LV[G.level].name)+'贏了'}，放倒對手 ${G.stats.ankle[G.me]} 次，被放倒 ${G.stats.ankle[1-G.me]} 次`;res.append(sm);
-  G.winner=win?G.me:1-G.me;G.finale=true;$('#go').textContent='再來一場';menu.hidden=false;hud.dataset.off='1';
+  const sm=document.createElement('small'),foeName=Net.on?Net.foeName():LV[G.level].name;
+  sm.textContent=why==='left'?(win?foeName+'斷線太久，這場算你贏':'你斷線太久，這場算'+foeName+'贏')
+    :why==='quit'?(win?foeName+'離開了比賽，這場算你贏':'你離開了比賽')
+    :why==='gone'?'連線中斷太久，這場比賽沒有結果'
+    :`${win?'你贏了':foeName+'贏了'}，放倒對手 ${G.stats.ankle[G.me]} 次，被放倒 ${G.stats.ankle[1-G.me]} 次`;
+  res.append(sm);paintStats();
+  G.winner=win?G.me:1-G.me;G.finale=true;again=null;$('#go').textContent='再來一場';menu.classList.add('ended');menu.hidden=false;hud.dataset.off='1';closePause();
+  if(why==='gone'){$('#recap').hidden=true;Net.afterGame();return}
   Career.finish(win);
   if(Net.on){Net.ready=false;Net.afterGame();return}
   G.attract=true;G.p[0].human=false;overT=setTimeout(()=>{newGame(true);dressUp()},3600);
 }
 function showHud(name){
-  clearTimeout(overT);$('#result').hidden=true;$('#recap').hidden=true;menu.hidden=true;$('#lobby').hidden=true;hud.dataset.off='0';$('#rivalName').textContent=name;$('#s0').textContent='0';$('#s1').textContent='0';
+  clearTimeout(overT);lastS=[-1,-1];again=null;menu.classList.remove('ended');$('#result').hidden=true;$('#stats').hidden=true;$('#recap').hidden=true;menu.hidden=true;$('#lobby').hidden=true;hud.dataset.off='0';$('#rivalName').textContent=name;$('#s0').textContent='0';$('#s1').textContent='0';
 }
 function startGame(){
   if(Net.on){audio();Net.pressReady();return}
   if(Ladder.on){audio();Ladder.card();return}
   audio();Inp.x=Inp.z=Inp.mag=0;Inp.a=Inp.b=false;startAmb();showHud(LV[G.level].name);
-  Foe.kit=null;Career.begin();newGame(false,G.level);dressUp();
+  Foe.kit=null;G.win=Save.win;Career.begin();newGame(false,G.level);dressUp();
   setTimeout(()=>hint('foe','對手今天打'+TP[G.p[1].type].n+'。能量滿了長按絕招鍵 0.25 秒就能放。',3),600);
   try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}
 }
-const Net={on:false,live:false,ws:null,seat:-1,room:'',ready:false,tap:null,log:[],seq:0,cur:null,sendT:0,rtt:90,jitter:0,lastStateAt:0,lastRx:0,n:0,paused:false,waitPeer:false,stalled:false,tries:0,base:null,pend:null,needFull:false,dbg:null,afterGame(){},pressReady(){},frame(d){return advance(d)}};
+const Net={on:false,live:false,ws:null,seat:-1,room:'',ready:false,tap:null,log:[],seq:0,cur:null,sendT:0,rtt:90,rttN:0,jitter:0,lastStateAt:0,lastRx:0,openAt:0,n:0,paused:false,waitPeer:false,waitEnd:0,stalled:false,tries:0,retry:0,gone:0,base:null,pend:null,needFull:false,dbg:null,dead:false,away:false,win:Save.win,names:['',''],peer:'',fw:null,why:'',quickOn:false,foeName(){return'朋友'},afterGame(){},pressReady(){},quit(){},frame(d){return advance(d)}};
+const tagLine=t=>{document.querySelector('.tag').textContent=t};
+const paintTag=()=>{if(!Net.on)tagLine(`河濱 3 號場，一對一，先到 ${Save.win} 分`)};
+const wake=()=>{try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}};
 if(window.__ONLINE){
-  const ALPHA='ABCDEFGHJKMNPQRSTUVWXYZ23456789',lobby=$('#lobby'),lobState=$('#lobState');
-  const token=(()=>{let t;try{t=sessionStorage.getItem('dh-tok')}catch(e){}if(!t){t=Math.random().toString(36).slice(2,12);try{sessionStorage.setItem('dh-tok',t)}catch(e){}}return t})();
+  const ALPHA='ABCDEFGHJKMNPQRSTUVWXYZ23456789',lobby=$('#lobby'),lobState=$('#lobState'),netWait=$('#netWait'),foot=document.querySelector('.foot');
+  const token=(()=>{let t;try{t=sessionStorage.getItem('dh-tok')}catch(e){}if(!t){t=Math.random().toString(36).slice(2,12)+Math.random().toString(36).slice(2,6);try{sessionStorage.setItem('dh-tok',t)}catch(e){}}return t})();
+  const wsUrl=path=>(location.protocol==='https:'?'wss://':'ws://')+location.host+path;
   const send=o=>{if(Net.ws&&Net.ws.readyState===1)Net.ws.send(JSON.stringify(o))};
   const say=t=>{lobState.textContent=t};
   const link=()=>location.origin+'/?r='+Net.room;
+  const ping=()=>send({t:'p',c:Date.now(),r:Net.rtt});
+  Net.foeName=()=>Net.names[1-Net.seat]||Net.peer||(Net.quickOn?'對手':'朋友');
   function drawQR(){const q=qrcode(0,'M');q.addData(link());q.make();$('#qr').innerHTML=q.createSvgTag({scalable:true,margin:0});$('#lobCode').textContent=Net.room}
+  // 斷線時清掉本機的預測狀態，等伺服器重新給完整快照
+  function lost(){Net.paused=Net.live;Net.stalled=false;Net.log=[];Net.cur=null;Net.base=null;Net.pend=null}
   function connect(){
-    const ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws/'+Net.room);Net.ws=ws;
-    ws.onopen=()=>{Net.tries=0;Net.lastRx=Date.now();send({t:'j',k:token,y:G.myType});if(Net.ready)send({t:'r',y:G.myType});if(Net.live)hintNow('網路已重新連上，等待對戰狀態同步')};
-    ws.onmessage=e=>{Net.lastRx=Date.now();onMsg(JSON.parse(e.data))};
-    ws.onclose=()=>{if(!Net.on||Net.ws!==ws)return;Net.paused=Net.live;Net.stalled=Net.live;Net.log=[];Net.cur=null;Net.base=null;Net.pend=null;if(++Net.tries>30){say('連線中斷了，請重新開房');return}if(Net.live)hintNow('連線中斷，重新連線中');else say('連線中，請稍等');setTimeout(connect,1000)};
+    clearTimeout(Net.retry);Net.retry=0;
+    if(Net.dead||!Net.on||!Net.room)return;
+    const ws=new WebSocket(wsUrl('/ws/'+Net.room));Net.ws=ws;Net.openAt=Date.now();
+    ws.onopen=()=>{
+      Net.tries=0;Net.away=false;Net.lastRx=Date.now();
+      // 帶上規則版本、名字與（房主的）比賽長度；已經按了準備就一併補送
+      send({t:'j',k:token,v:VER,y:G.myType,n:Save.name,w:Net.win});
+      if(Net.ready)send({t:'r',y:G.myType,n:Save.name});
+      // 連上後馬上連量三次延遲，不必等好幾秒才知道網路狀況
+      ping();setTimeout(ping,250);setTimeout(ping,500);netUi();
+    };
+    ws.onmessage=e=>{if(Net.ws!==ws)return;Net.lastRx=Date.now();let m;try{m=JSON.parse(e.data)}catch(_){return}if(m&&typeof m==='object')onMsg(m)};
+    ws.onclose=()=>{
+      if(!Net.on||Net.ws!==ws)return;
+      lost();
+      // 切到別的 App 時不重連（伺服器會暫停比賽等我回來），回到畫面再連
+      if(Net.dead||document.hidden){Net.away=true;netUi();return}
+      Net.tries++;
+      if(!Net.live)say(Net.tries>3?'連不上伺服器，持續重試中，請檢查網路':'連線中，請稍等');
+      netUi();
+      // 第一次立刻重連，之後逐步拉長（最長 2.5 秒），不會在網路不通時狂打伺服器
+      Net.retry=setTimeout(connect,Math.min(2500,250*Math.pow(2,Math.min(Net.tries-1,4))));
+    };
   }
   // 手機關螢幕後連線可能已死但瀏覽器還回報開著，所以看「多久沒收到訊息」來判斷。
   function revive(){
-    const w=Net.ws;Net.ws=null;Net.paused=Net.live;Net.stalled=Net.live;Net.log=[];Net.cur=null;Net.base=null;Net.pend=null;
+    const w=Net.ws;Net.ws=null;lost();
     try{w&&w.close()}catch(e){}
-    Net.tries=0;connect();
+    Net.tries=0;connect();netUi();
   }
   function watch(limit){
-    if(!Net.on||!Net.room||!(Net.live||Net.ready||G.finale))return;
-    if(!Net.ws||Net.ws.readyState>1){if(Net.tries>30||!Net.ws)revive();return}
-    if(Net.ws.readyState===1&&Date.now()-Net.lastRx>limit)revive();
+    if(!Net.on||!Net.room||Net.dead||document.hidden)return;
+    const w=Net.ws;
+    if(!w||w.readyState>1){if(!Net.retry)revive();return}
+    if(w.readyState===0){if(Date.now()-Net.openAt>6000)revive();return} // 握手卡住：重來
+    if(Date.now()-Net.lastRx>limit)revive();
   }
   function showInvite(){drawQR();$('#qr').hidden=false;$('#copy').hidden=false;$('#copyCode').hidden=false;$('#lobTitle').textContent='掃 QR Code 開打'}
   function hintNow(t){hintEl.textContent=t;hintEl.classList.add('show');clearTimeout(hintT);hintT=setTimeout(()=>hintEl.classList.remove('show'),2800)}
+  // 連線狀態卡：自己斷線、訊號卡住、對手斷線時蓋在球場上，一直顯示到恢復為止，並附離開鈕
+  function netUi(){
+    let t='',s='';
+    if(Net.live&&!G.finale){
+      const up=Net.ws&&Net.ws.readyState===1;
+      if(Net.dead){t='連線已關閉';s='這場比賽已在另一個分頁開啟'}
+      else if(!up){t='連線中斷';s=Net.tries>1?`重新連線中…（第 ${Net.tries} 次）\n45 秒內連回來就能繼續`:'重新連線中…'}
+      else if(Net.waitPeer){
+        if(!Net.waitEnd){t='重新同步中';s='馬上回到比賽'}
+        else{const left=Math.max(0,Math.ceil((Net.waitEnd-Date.now())/1000));t=Net.foeName()+'斷線了';s=`等他回來，還有 ${left} 秒\n時間到這場算你贏`}
+      }else if(Net.stalled){t='訊號不穩';s='等待伺服器回應…'}
+    }
+    netWait.hidden=!t;
+    if(t){$('#nwT').textContent=t;$('#nwS').textContent=s}else{const q=$('#nwQuit');q.classList.remove('sure');q.textContent='離開比賽'}
+  }
   function go(m){
     Net.seat=m.seat;G.me=m.seat;Inp=INP[m.seat];Inp.x=Inp.z=Inp.mag=0;Inp.a=Inp.b=Inp.c=false;
-    G.online=true;G.attract=false;G.quiet=true;G.finale=false;G.p[0].human=G.p[1].human=true;
+    G.online=true;G.attract=false;G.quiet=true;G.finale=false;G.solo=false;G.gwK=1;G.p[0].human=G.p[1].human=true;
+    if(m.w)G.win=m.w;
+    Net.names=Array.isArray(m.names)?m.names.map(n=>typeof n==='string'?n:''):['',''];
     dressUp(); // 每一端固定本機黃、對方紅（不依房主席次）
-    Net.base=null;Net.pend=null;Net.needFull=false;
+    Net.base=null;Net.pend=null;Net.needFull=false;Net.fw=null;Net.why='';clearTimeout(Net.gone);clearTimeout(mmT);
     if(!m.resume){Career.begin();Net.log=[];Net.cur=null;Net.seq=0;Net.sendT=0;G.phase='check';G.score=[0,0]}
-    Net.live=true;Net.ready=false;$('#again').hidden=true;Net.waitPeer=!!m.resume;Net.paused=!!m.resume;Net.stalled=false;Net.lastStateAt=Date.now();
-    showHud('朋友');startAmb();$('#netPing').hidden=false;
-    try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}
+    // 重連回到比賽：先暫停，等伺服器說「back」（對手也在）或「wait」（對手不在）
+    Net.live=true;Net.ready=false;$('#again').hidden=true;Net.waitPeer=!!m.resume;Net.waitEnd=0;Net.paused=!!m.resume;Net.stalled=false;Net.lastStateAt=Date.now();
+    closePause();showHud(Net.foeName());startAmb();$('#netPing').hidden=false;netUi();wake();
+  }
+  // 這場連線比賽結束（正常打完、對手棄賽、或伺服器上已經沒有這場比賽）
+  function endOnline(){
+    clearTimeout(Net.gone);Net.live=false;Net.paused=false;Net.waitPeer=false;Net.stalled=false;Net.pend=null;Net.base=null;
+    G.phase='over';netUi();
+    if(!G.finale)gameOver();
   }
   // ---- 狀態同步：差量快照 → 合併成基準狀態 → 每個畫面幀最多還原一次 ----
   const patchArr=(a,d)=>{for(let i=0;i<d.length;i+=2)a[d[i]]=d[i+1]};
@@ -1870,6 +2013,8 @@ if(window.__ONLINE){
       }
     }
     Object.assign(live,keep);
+    // 「比賽結束」只聽伺服器的：補播時就算本機先算到結束，也等伺服器的正式結果（含數據）再結算
+    if(G.phase==='over')G.phase='dead';
     const dm=carry(G.p[me],was[me],true),df=carry(foe,was[1-me],false);
     const held=b.mode==='held'&&!!G.holder;
     if(held||wasHeld){b.ex=b.ey=b.ez=0} // 持球時球由 view() 綁在持球者平滑後的手上
@@ -1880,7 +2025,7 @@ if(window.__ONLINE){
         b.ex=X;b.ey=Y;b.ez=Z;
       }else{b.ex=b.ey=b.ez=0}
     }
-    for(const f of m.fx){if(f[0]==='over'&&f[1].stats)G.stats=f[1].stats;G.fx.push(f)}
+    for(const f of m.fx){if(f[0]==='over'){if(f[1].stats)G.stats=f[1].stats;continue}G.fx.push(f)}
     if(m.fx.some(f=>f[0]==='types'))dressUp();
     if(Net.dbg)Net.dbg({dm,df,steps,left:budget<=0,n:m.n,db:hyp(bw[0]-b.x,bw[1]-b.y,bw[2]-b.z)});
   }
@@ -1888,36 +2033,57 @@ if(window.__ONLINE){
     switch(m.t){
       case's':
         if(Net.live){
-          Net.lastStateAt=Date.now();Net.stalled=false;
+          Net.lastStateAt=Date.now();
+          if(Net.stalled){Net.stalled=false;netUi()}
           if(!Net.waitPeer)Net.paused=false;
           absorb(m);
         }
         break;
       case'go':G.fx.length=0;go(m);break;
-      case'seat':Net.seat=m.seat;break;
+      case'seat':
+        Net.seat=m.seat;try{sessionStorage.removeItem('dh-reload')}catch(e){}
+        // 伺服器上這場比賽已經不在了（斷線太久、房間被收掉）：等一下看有沒有補送結果，沒有就自己收尾
+        if(Net.live&&m.live===false){clearTimeout(Net.gone);Net.gone=setTimeout(()=>{if(Net.live&&!G.finale){Net.why='gone';Net.fw=null;endOnline()}},700)}
+        break;
       case'lobby':{
-        Net.n=m.n;if(Net.live)break;
-        const n=m.n,ag=$('#again'),ended=G.finale;
-        say(n<2?(ended?'朋友離開了，掃碼重新邀請':'等朋友掃 QR 或輸入房號'):Net.ready?(ended?'等朋友按再來一場':'等朋友按開打'):'朋友來了，按開打');
-        if(ended&&!Net.ready){ag.hidden=!(n<2||m.r>0);ag.textContent=n<2?'朋友離開了，按再來一場可以重新邀請':'朋友想再打一場'}
-        if(ended&&Net.ready&&n<2)showInvite();
+        Net.n=m.n;Net.peer=typeof m.pn==='string'?m.pn:'';if(Net.live)break;
+        const n=m.n,ag=$('#again'),ended=G.finale,who=Net.peer||(Net.quickOn?'對手':'朋友');
+        if(Net.quickOn&&!ended){say(n<2?'配對成功，等對手進場…':'對手進場了，馬上開始');break}
+        say(n<2?(ended?who+'離開了'+(Net.quickOn?'':'，掃碼重新邀請'):'等朋友掃 QR 或輸入房號'):Net.ready?(ended?'等'+who+'按再來一場':'等'+who+'按開打'):who+'來了，按開打');
+        if(ended&&!Net.ready){ag.hidden=!(n<2||m.r>0);ag.textContent=n<2?who+'離開了'+(Net.quickOn?'，可以回主選單重新配對':'，按再來一場可以重新邀請'):who+'想再打一場'}
+        if(ended&&Net.ready&&n<2&&!Net.quickOn)showInvite();
+        if(!ended&&!Net.ready)tagLine(n<2?`房間 ${Net.room} 目前沒有其他人，可以先準備`:`${who}在等你，選好球員就開打（先到 ${m.w||11} 分）`);
         break;
       }
-      case'wait':Net.waitPeer=true;Net.paused=true;hintNow('對手斷線了，等他回來');break;
-      case'back':Net.waitPeer=false;Net.paused=false;Net.lastStateAt=Date.now();hintNow('對手回來了');break;
+      case'wait':Net.waitPeer=true;Net.paused=true;Net.waitEnd=Date.now()+(Number.isFinite(m.s)?m.s:45)*1000;netUi();break;
+      case'back':Net.waitPeer=false;Net.paused=false;Net.lastStateAt=Date.now();netUi();hintNow('連線恢復，從檢查球繼續');break;
       case'over':
-        Net.live=false;Net.paused=false;Net.pend=null;Net.base=null;
         if(Array.isArray(m.score)&&m.score.length===2)G.score=m.score;
         if(m.stats)G.stats=m.stats;
-        G.phase='over';
-        if(!G.finale)gameOver();
+        Net.why=m.why||'';Net.fw=m.why?m.win===Net.seat:null;
+        endOnline();
         break;
-      case'full':say('這個房間已經滿了');Net.on=false;break;
+      case'full':
+        Net.dead=true;say('這個房間已經滿了');tagLine('這個房間已經滿了，請跟朋友確認房號');
+        $('#go').hidden=true;lobby.hidden=true;
+        break;
+      case'dup':Net.dead=true;lost();netUi();say('已在另一個分頁開啟');tagLine('這個房間已在另一個分頁開啟');break;
+      case'idle':Net.dead=true;Net.ready=false;say('房間閒置太久已關閉，請回主選單重新開房');$('#lobTitle').textContent='房間已關閉';$('#qr').hidden=true;$('#copy').hidden=true;$('#copyCode').hidden=true;break;
+      case'ver':{
+        // 規則版本和伺服器不同：通常是這支手機還留著舊版頁面，重新載入一次就好
+        Net.dead=true;
+        let again=true;try{again=sessionStorage.getItem('dh-reload')==='1';sessionStorage.setItem('dh-reload','1')}catch(e){}
+        if(m.v>VER&&!again){location.reload();break}
+        const t=m.v>VER?'遊戲有新版本，請關掉這個分頁重新開啟':'伺服器正在更新，請一分鐘後再試';
+        say(t);tagLine(t);
+        break;
+      }
       case'q':{
         const sample=Date.now()-m.c;
         if(Number.isFinite(sample)&&sample>=0&&sample<3000){
-          Net.jitter=.8*Net.jitter+.2*Math.abs(sample-Net.rtt);
-          Net.rtt=.8*Net.rtt+.2*sample;
+          // 第一筆直接採用，之後才做平滑：一開賽延遲補償就是準的
+          if(!Net.rttN++){Net.rtt=sample;Net.jitter=0}
+          else{Net.jitter=.8*Net.jitter+.2*Math.abs(sample-Net.rtt);Net.rtt=.8*Net.rtt+.2*sample}
           const label=$('#netPing');label.hidden=!Net.live;
           label.textContent=Math.round(Net.rtt)+'ms';
           label.classList.toggle('warn',Net.rtt>160||Net.jitter>65);
@@ -1943,7 +2109,7 @@ if(window.__ONLINE){
     if(!Net.live)return lobby.hidden?advance(d):1;
     if(Net.paused)return 1;
     if(Net.lastStateAt&&Date.now()-Net.lastStateAt>950){
-      if(!Net.stalled){Net.stalled=true;hintNow('連線延遲，等待最新球場狀態');}
+      if(!Net.stalled){Net.stalled=true;netUi()}
       Net.paused=true;return 1;
     }
     if(Net.pend){const q=Net.pend;Net.pend=null;reconcile(q)}
@@ -1962,26 +2128,79 @@ if(window.__ONLINE){
     if(cur){inp.x=cur.x;inp.z=cur.z;inp.mag=cur.m;inp.a=cur.a;inp.b=cur.b;inp.c=cur.c}
     const ts=advance(d,()=>{if(Net.cur)Net.cur.n++});
     if(cur)Object.assign(inp,raw);
+    // 比賽結束只聽伺服器的（它會帶著完整數據）；本機先算到就停在原地等
+    if(G.phase==='over')G.phase='dead';
     return ts;
   };
-  setInterval(()=>{if(Net.on){send({t:'p',c:Date.now(),r:Net.rtt});watch(3500)}},1000);
+  setInterval(()=>{if(!Net.on)return;ping();watch(3500);if(!netWait.hidden)netUi()},1000);
+  const wakeUp=()=>{
+    if(!Net.on||Net.dead||document.hidden)return;
+    if(Net.away||!Net.ws||Net.ws.readyState>1)revive();
+    else{ping();setTimeout(()=>watch(1300),1400)}
+  };
   document.addEventListener('visibilitychange',()=>{
-    if(document.hidden||!Net.on)return;
-    send({t:'p',c:Date.now(),r:Net.rtt});setTimeout(()=>watch(1300),1400);
+    if(!document.hidden){wakeUp();return}
+    // 比賽中切到別的 App 或關螢幕：主動斷線，伺服器會暫停比賽等我回來（最多 45 秒），不讓角色傻站著被打
+    if(Net.on&&Net.live&&Net.ws&&Net.ws.readyState===1){Net.away=true;try{Net.ws.close()}catch(e){}}
   });
+  addEventListener('online',wakeUp);
+  addEventListener('pageshow',e=>{if(e.persisted)wakeUp()});
   Net.afterGame=()=>{
-    Net.live=false;Net.ready=false;Net.paused=false;
-    $('#go').textContent='再來一場';$('#host').hidden=true;$('#joinBox').hidden=true;$('#lv').hidden=true;
+    Net.live=false;Net.ready=false;Net.paused=false;netUi();
+    $('#go').textContent='再來一場';foot.classList.add('net');
   };
   Net.pressReady=()=>{
+    if(Net.dead)return;
     Net.ready=true;Inp.tapA=Inp.tapB=Inp.tapC=false;
-    if(!Net.ws||Net.ws.readyState>1)connect();
-    else if(Net.ws.readyState===1){if(Date.now()-Net.lastRx>2000)revive();else send({t:'r',y:G.myType})}
-    $('#again').hidden=true;lobby.hidden=false;$('#lobTitle').textContent=G.finale?'等朋友按再來一場':'等朋友按開打';
+    if(!Net.ws||Net.ws.readyState>1){if(!Net.retry)connect()}
+    else if(Net.ws.readyState===1){if(Date.now()-Net.lastRx>2000)revive();else send({t:'r',y:G.myType,n:Save.name})}
+    $('#again').hidden=true;lobby.hidden=false;$('#lobTitle').textContent=G.finale?'等對手按再來一場':'等朋友按開打';
     $('#qr').hidden=true;$('#copy').hidden=true;$('#copyCode').hidden=true;
-    $('#lobCode').textContent=Net.room;say('房間 '+Net.room+' · 等對方準備');if(G.finale&&Net.n<2)showInvite();
+    $('#lobCode').textContent=Net.quickOn?'':Net.room;say(Net.quickOn?'等對方準備':'房間 '+Net.room+' · 等對方準備');if(G.finale&&Net.n<2&&!Net.quickOn)showInvite();
   };
-  function leave(){Net.on=false;Net.ready=false;try{Net.ws&&Net.ws.close()}catch(e){}location.href=location.origin+'/'}
+  // ---- 隨機配對：先連配對大廳排隊，湊到人就拿到房號，再照一般房間流程進場 ----
+  let mmWs=null,mmPing=0,mmT=0;
+  function quickStop(){Net.quickOn=false;clearInterval(mmPing);clearTimeout(mmT);const w=mmWs;mmWs=null;try{w&&w.close()}catch(e){}}
+  function quickFind(){
+    clearTimeout(mmT);
+    const ws=new WebSocket(wsUrl('/mm'));mmWs=ws;
+    $('#lobTitle').textContent='隨機配對';say('連線中…');
+    ws.onopen=()=>{ws.send(JSON.stringify({t:'q',k:token,v:VER}))};
+    ws.onmessage=e=>{
+      if(mmWs!==ws)return;let m;try{m=JSON.parse(e.data)}catch(_){return}
+      if(!m)return;
+      if(m.t==='w')say('正在找對手，找到會自動開始');
+      else if(m.t==='x'){quickStop();$('#lobTitle').textContent='沒找到對手';say('現在沒有人在線上。晚點再試，或開房找朋友')}
+      else if(m.t==='m'&&typeof m.room==='string'&&/^[A-Z0-9]{4,8}$/.test(m.room)){
+        mmWs=null;try{ws.close()}catch(_){}
+        Net.room=m.room;Net.on=true;Net.dead=false;Net.ready=true;Net.win=11;Net.n=0;foot.classList.add('net');
+        $('#lobTitle').textContent='配對成功';say('配對成功，等對手進場…');connect();
+        // 對手一直沒進場（他那邊斷線或取消了）：回去重新排隊
+        mmT=setTimeout(()=>{
+          if(!Net.quickOn||Net.live||Net.n>=2||G.finale)return;
+          const w=Net.ws;Net.on=false;Net.ready=false;Net.ws=null;clearTimeout(Net.retry);Net.retry=0;foot.classList.remove('net');
+          try{w&&w.close()}catch(e){}
+          quickFind();
+        },12000);
+      }
+    };
+    ws.onclose=()=>{if(mmWs!==ws)return;mmWs=null;if(Net.quickOn&&!Net.on){say('連不上配對伺服器，重試中…');mmT=setTimeout(()=>{if(Net.quickOn&&!Net.on)quickFind()},1500)}};
+  }
+  $('#quick').addEventListener('click',()=>{
+    audio();if(Ladder.on||Net.on)return;
+    Net.quickOn=true;lobby.hidden=false;$('#qr').hidden=true;$('#copy').hidden=true;$('#copyCode').hidden=true;$('#lobCode').textContent='';
+    clearInterval(mmPing);mmPing=setInterval(()=>{if(mmWs&&mmWs.readyState===1)mmWs.send(JSON.stringify({t:'p',c:Date.now()}))},5000);
+    quickFind();
+  });
+  // 離開：比賽中會告訴伺服器「我認輸」，對手馬上拿到結果，不必空等 45 秒
+  function leave(){
+    if(Net.quickOn&&!Net.on){quickStop();lobby.hidden=true;return}
+    quickStop();
+    const sent=Net.ws&&Net.ws.readyState===1;send({t:'bye'});
+    Net.on=false;Net.ready=false;Net.dead=true;Net.live=false;clearTimeout(Net.retry);
+    setTimeout(()=>{try{Net.ws&&Net.ws.close()}catch(e){}location.href=location.origin+'/'},sent?150:0);
+  }
+  Net.quit=leave;
   $('#lobBack').addEventListener('click',leave);
   $('#copy').addEventListener('click',()=>{const b=$('#copy');Promise.resolve().then(()=>navigator.clipboard.writeText(link())).then(()=>{b.textContent='已複製'},()=>{b.textContent=link()})});
   $('#copyCode').addEventListener('click',()=>{const b=$('#copyCode');Promise.resolve().then(()=>navigator.clipboard.writeText(Net.room)).then(()=>{b.textContent='已複製房號'},()=>{b.textContent=Net.room})});
@@ -1989,24 +2208,29 @@ if(window.__ONLINE){
   const joinCode=$('#roomCode'),joinError=$('#joinError');
   const validCode=v=>/^[A-Z0-9]{4,8}$/.test(v);
   if(validCode(r)){
-    Net.on=true;Net.room=r;$('#lv').hidden=true;$('#joinBox').hidden=true;
-    $('#go').textContent='加入朋友的房間';document.querySelector('.tag').textContent='朋友在等你，選好球員就開打';
+    // 用連結進來：馬上連線，房主那邊立刻看到「朋友來了」；如果是比賽中重新整理，伺服器會直接把我送回球場
+    Net.on=true;Net.room=r;foot.classList.add('net');
+    $('#go').textContent='加入朋友的房間';tagLine('朋友在等你，選好球員就開打');
+    connect();
   }else{
-    const host=$('#host');host.hidden=false;$('#go').textContent='打電腦';
-    host.addEventListener('click',()=>{
-      audio();Net.on=true;Net.room=Array.from({length:4},()=>ALPHA[Math.floor(Math.random()*ALPHA.length)]).join('');
-      Net.ready=true;drawQR();$('#qr').hidden=false;$('#copy').hidden=false;$('#copyCode').hidden=false;
+    $('#netRow').hidden=false;$('#go').textContent='打電腦';paintTag();
+    $('#host').addEventListener('click',()=>{
+      audio();if(Ladder.on||Net.on)return;
+      Net.on=true;Net.dead=false;Net.win=Save.win;Net.room=Array.from({length:4},()=>ALPHA[Math.floor(Math.random()*ALPHA.length)]).join('');
+      Net.ready=true;foot.classList.add('net');showInvite();
       lobby.hidden=false;say('掃 QR Code、分享連結或告訴朋友房號');connect();
+      // 網址帶上房號：不小心重新整理也回得來
+      try{history.replaceState(null,'','/?r='+Net.room)}catch(e){}
     });
     const joinByCode=()=>{
       const code=joinCode.value.toUpperCase().replace(/[\s-]/g,'');
       joinCode.value=code;
       if(!validCode(code)){joinError.hidden=false;joinError.textContent='請輸入 4～8 碼英數房號（例如 AB3K）';return}
       joinError.hidden=true;
-      Net.on=true;Net.room=code;$('#lv').hidden=true;host.hidden=true;$('#joinBox').hidden=true;
-      document.querySelector('.tag').textContent='房間 '+code+' · 選好球員就能開始';
+      Net.on=true;Net.dead=false;Net.room=code;foot.classList.add('net');
+      tagLine('房間 '+code+' · 選好球員就能開始');
       $('#go').textContent='加入朋友的房間';
-      history.replaceState(null,'','/?r='+encodeURIComponent(code));
+      try{history.replaceState(null,'','/?r='+encodeURIComponent(code))}catch(e){}
       startGame();
     };
     $('#joinRoom').addEventListener('click',joinByCode);
@@ -2015,13 +2239,15 @@ if(window.__ONLINE){
 }
 window.__net=Net;
 
-$('#go').addEventListener('click',startGame);
+// 結算畫面的主按鈕預設是「再來一場」；三分大賽等模式可以指定自己的重來方式
+let again=null;const homeText=$('#go').textContent;
+$('#go').addEventListener('click',()=>{if(again){const f=again;again=null;f();return}startGame()});
 Career.init();
 const seg=(sel,attr,key,store)=>{for(const b of document.querySelectorAll(sel+' button'))b.addEventListener('click',()=>{G[key]=b.dataset[attr];for(const c of document.querySelectorAll(sel+' button'))c.setAttribute('aria-pressed',c===b?'true':'false');try{localStorage.setItem(store,G[key])}catch(e){}});try{const v=localStorage.getItem(store),b=v&&document.querySelector(`${sel} [data-${attr}="${v}"]`);if(b)b.click()}catch(e){}};
 seg('#kind','tp','myType','dh-tp');
 for(const b of document.querySelectorAll('#lv button'))b.addEventListener('click',()=>{G.level=b.dataset.lv;for(const c of document.querySelectorAll('#lv button'))c.setAttribute('aria-pressed',c===b?'true':'false');try{localStorage.setItem('dh-lv',G.level)}catch(e){}});
 try{const v=localStorage.getItem('dh-lv');if(v&&LV[v])document.querySelector(`#lv [data-lv="${v}"]`).click()}catch(e){}
-const muteBtn=$('#mute');const paintMute=()=>{muteBtn.textContent=muted?'靜':'音';muteBtn.setAttribute('aria-label',muted?'開啟聲音':'關閉聲音')};paintMute();
+const muteBtn=$('#mute');const paintMute=()=>{muteBtn.textContent='聲音：'+(muted?'關':'開')};paintMute();
 muteBtn.addEventListener('click',()=>{muted=!muted;audio();if(master)master.gain.value=muted?0:.9;paintMute();try{localStorage.setItem('dh-muted',muted?'1':'0')}catch(e){}});
 
 // 搖桿：左半邊任意位置按下就出現
@@ -2084,7 +2310,7 @@ function resize(){
 new ResizeObserver(resize).observe(stage);resize();
 const camFocus=new THREE.Vector3(0,1,6),camTarget=new THREE.Vector3(),tmp=new THREE.Vector3();
 let rbHeld=false,camFirstBall=true;const rb=[0,0,0],rr=[0,0,0];
-let zoom=1,camFirst=true,lastHandleLabel='',lastB='',lastAdis=null,lastClock=-1,lastDribSign=0,frames=0,fpsT=0;
+let zoom=1,camFirst=true,lastHandleLabel='',lastB='',lastAdis=null,lastClock=-1,lastS=[-1,-1],lastDribSign=0,frames=0,fpsT=0;
 function setBtn(el,t,dim){if(el._t!==t){el.textContent=t;el._t=t}el.classList.toggle('dim',!!dim)}
 function view(dtR,dtS){
   const p0=G.p[G.me],p1=G.p[1-G.me],vm=G.me;
@@ -2123,8 +2349,9 @@ function view(dtR,dtS){
   for(let i=0;i<2;i++){
     const p=G.p[i],vi=i^vm,r=BODIES[vi];
     updBody(r,p,dtS,dtR);
-    shadows[vi].position.x=p.x;shadows[vi].position.z=p.z;const sc=clamp(1-p.y*.3,.45,1);shadows[vi].scale.set(sc,sc,1);
-    rings[vi].position.x=p.x;rings[vi].position.z=p.z;rings[vi].visible=p.s!=='fall';
+    const gone=G.solo&&vi===1;
+    shadows[vi].position.x=p.x;shadows[vi].position.z=p.z;const sc=clamp(1-p.y*.3,.45,1);shadows[vi].scale.set(sc,sc,1);shadows[vi].visible=!gone;
+    rings[vi].position.x=p.x;rings[vi].position.z=p.z;rings[vi].visible=p.s!=='fall'&&!gone;
     if(p.skid>.4&&Math.random()<.5)puff(p.x,.08,p.z,1,.5);
   }
   for(let i=0;i<2;i++){const p=G.p[i];p.x=sv[i*4];p.z=sv[i*4+1];p.ex=sv[i*4+2];p.ez=sv[i*4+3]}
@@ -2165,7 +2392,10 @@ function view(dtR,dtS){
   stars.forEach((s,i)=>{s.visible=!!down;if(down){const r=BODIES[down.id^vm];r.head.getWorldPosition(tmp);const a=G.t*6+i*2.09;s.position.set(tmp.x+Math.cos(a)*.5,tmp.y+.55+Math.sin(a*1.5)*.08,tmp.z+Math.sin(a)*.5)}});
   // 介面
   if(!G.attract){
-    const c=Math.ceil(G.clock);if(c!==lastClock){lastClock=c;clockEl.textContent=c;clockBox.classList.toggle('low',c<=3)}
+    if(!Contest.on){
+      const c=Math.ceil(G.clock);if(c!==lastClock){lastClock=c;clockEl.textContent=c;clockBox.classList.toggle('low',c<=3)}
+      const a=G.score[G.me],z=G.score[1-G.me];if(a!==lastS[0]||z!==lastS[1]){lastS=[a,z];$('#s0').textContent=a;$('#s1').textContent=z}
+    }
     $('#sideYou').classList.toggle('on',G.off===G.me);$('#sideRival').classList.toggle('on',G.off!==G.me);
     const me=p0,mode=G.holder===me?'atk':G.holder===p1?'def':'loose';
     hud.dataset.mode=mode==='atk'?'off':mode==='def'?'def':'off';
@@ -2180,9 +2410,9 @@ function view(dtR,dtS){
     else{setBtn(btnA,'',true);setBtn(btnB,'跳',me.s!=='free');btnB.classList.remove('hot')}
     const myTaunt=G.phase==='dead'&&G.cele===G.me&&!me.taunt&&me.s==='free'&&me.y===0;
     if(myTaunt){setBtn(btnA,'抱胸',false);btnA.style.setProperty('--cd','0');setBtn(btnB,'跳舞',false);btnB.classList.remove('hot')}
-    btnA.style.visibility=(mode==='loose'&&!myTaunt)?'hidden':'';
+    btnA.style.visibility=((mode==='loose'&&!myTaunt)||Contest.on)?'hidden':'';
     if(mode!=='atk'&&!myTaunt)btnA.style.setProperty('--cd','0');
-    const C=$('#btnC'),ready=me.en>=100,active=ultOn(me);
+    const C=$('#btnC'),ready=me.en>=100,active=ultOn(me);C.style.visibility=Contest.on?'hidden':'';
     setBtn(C,active?Math.ceil(me.ultT-G.t)+'秒':ready?TP[me.type].ult+'\n長按':'絕招',false);
     C.classList.toggle('hot',ready||active);C.style.setProperty('--cd',active?'0':(1-me.en/100).toFixed(2));
     C.setAttribute('aria-label',active?TP[me.type].ult+'還剩'+Math.ceil(me.ultT-G.t)+'秒':ready?'長按啟動'+TP[me.type].ult:'絕招能量 '+Math.round(me.en)+'%');
@@ -2207,7 +2437,7 @@ let last=performance.now();
 function frame(now){
   requestAnimationFrame(frame);
   const dtR=Math.min(.05,(now-last)/1000);last=now;
-  const ts=G.phase==='over'?0:Net.on?Net.frame(dtR):advance(dtR);
+  const ts=G.phase==='over'||paused?0:Net.on?Net.frame(dtR):advance(dtR);
   drain();
   if(G.phase==='over'&&!G.finale)gameOver();
   // 結算與等待頁不重繪遮住的 3D 球場，降低手機發熱與耗電。
@@ -2215,9 +2445,133 @@ function frame(now){
   view(dtR,dtR*ts);
   // 手機撐不住時自動降解析度
   frames++;fpsT+=dtR;
-  if(fpsT>2.5){const fps=frames/fpsT;frames=0;fpsT=0;if(fps<38&&prMax>1){prMax=Math.max(1,prMax-.5);pw=0;resize()}}
+  if(fpsT>2.5){const fps=frames/fpsT;frames=0;fpsT=0;if(gfx==='auto'&&!paused&&fps<38&&prMax>1){prMax=Math.max(1,prMax-.5);pw=0;resize()}}
 }
-window.__game={spinReady,moveKind,TP,G,get Inp(){return Inp},INP,step,drain,newGame,startGame,LV,knock,setS,startShot,updBody,BODIES,cam,Net};
+/* ───────────── 暫停與設定 ───────────── */
+let paused=false,gfx='auto';
+try{const g=localStorage.getItem('dh-gfx');if(g==='high'||g==='low')gfx=g}catch(e){}
+const pauseEl=$('#pause'),pQuit=$('#pQuit'),nick=$('#nick');
+const inGame=()=>!G.attract&&hud.dataset.off==='0';
+const setTxt=(el,t)=>{if(el._v!==t){el._v=t;el.textContent=t}};
+const paintOpts=()=>{paintMute();$('#vib').textContent='震動：'+(vibOn?'開':'關');$('#gfx').textContent='畫質：'+({auto:'自動',high:'高',low:'省電'})[gfx]};
+// 省電：解析度降到 1 倍並關掉即時陰影；高：固定最高解析度，不自動調降
+function applyGfx(){prMax=gfx==='low'?1:Math.min(devicePixelRatio||1,2);sun.castShadow=gfx!=='low';pw=0;resize()}
+function openPause(){
+  if(!pauseEl.hidden)return;
+  const game=inGame();
+  if(game&&!Net.live)paused=true; // 連線對戰不能單方面暫停，選單開著時比賽照常進行
+  Inp.x=Inp.z=Inp.mag=0;Inp.a=Inp.b=Inp.c=false;
+  $('#pTitle').textContent=game?(Net.live?'選單':'暫停'):'設定';
+  $('#pNote').hidden=!(game&&Net.live);
+  $('#pResume').textContent=game?'繼續比賽':'完成';
+  pQuit.hidden=!game;pQuit.classList.remove('sure');pQuit.textContent=Tut.on?'離開教學':Contest.on?'離開三分大賽':Net.live?'離開比賽（算認輸）':'離開比賽';
+  $('#pName').hidden=game;$('#winSeg').hidden=game||Net.on;nick.value=Save.name;
+  paintOpts();pauseEl.hidden=false;pauseEl.scrollTop=0;
+}
+function closePause(){
+  if(pauseEl.hidden)return;
+  pauseEl.hidden=true;paused=false;
+  const n=[...nick.value.replace(/[\u0000-\u001f\u007f<>&"'`]/g,'').trim()].slice(0,10).join('');
+  if(n!==Save.name){Save.name=n;store()}
+}
+function toMenu(){hud.dataset.off='1';menu.hidden=false;menu.classList.remove('ended');$('#stats').hidden=true;G.solo=false;G.gwK=1;newGame(true);dressUp();Career.paint()}
+// 從結算畫面回到主選單（單人）
+function backHome(){
+  again=null;menu.classList.remove('ended');for(const k of['#result','#stats','#recap','#again'])$(k).hidden=true;
+  if(Ladder.on)Ladder.stop();
+  $('#go').textContent=Career.goText=homeText;Career.paint();
+}
+$('#home').addEventListener('click',()=>{if(Net.on||Net.quickOn)Net.quit();else backHome()});
+function quitGame(){
+  closePause();$('#netWait').hidden=true;
+  if(Net.on){Net.quit();return}
+  if(Tut.on){Tut.stop(false);return}
+  if(Contest.on){Contest.stop();return}
+  if(Ladder.on){Ladder.stop();$('#go').textContent=Career.goText}
+  toMenu();
+}
+// 離開要按兩次，免得比賽中誤觸
+const sure=(el,fn)=>el.addEventListener('click',()=>{
+  if(el.classList.contains('sure')){el.classList.remove('sure');fn();return}
+  const t=el.textContent;el.classList.add('sure');el.textContent='再按一次確定離開';
+  setTimeout(()=>{if(el.classList.contains('sure')){el.classList.remove('sure');el.textContent=t}},3000);
+});
+sure(pQuit,quitGame);sure($('#nwQuit'),quitGame);
+$('#pauseBtn').addEventListener('click',()=>{audio();openPause()});
+$('#setBtn').addEventListener('click',()=>{audio();openPause()});
+$('#pResume').addEventListener('click',closePause);
+$('#vib').addEventListener('click',()=>{vibOn=!vibOn;try{localStorage.setItem('dh-vib',vibOn?'1':'0')}catch(e){}paintOpts();if(vibOn)try{navigator.vibrate&&navigator.vibrate(30)}catch(e){}});
+$('#gfx').addEventListener('click',()=>{gfx=gfx==='auto'?'high':gfx==='high'?'low':'auto';try{localStorage.setItem('dh-gfx',gfx)}catch(e){}applyGfx();paintOpts()});
+muteBtn.addEventListener('click',paintOpts);
+const paintWin=()=>{for(const b of document.querySelectorAll('#winSeg button'))b.setAttribute('aria-pressed',String(+b.dataset.w===Save.win))};
+for(const b of document.querySelectorAll('#winSeg button'))b.addEventListener('click',()=>{Save.win=+b.dataset.w;Net.win=Save.win;store();paintWin();paintTag()});
+paintWin();paintTag();if(gfx!=='auto')applyGfx();
+$('#pHow').innerHTML=document.querySelector('.how').innerHTML;
+// 單人模式切到別的 App 或關螢幕：自動暫停
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&inGame()&&!Net.on&&!G.finale)openPause()});
+addEventListener('keydown',e=>{if(e.code!=='Escape'||e.target?.matches?.('input,textarea'))return;if(!pauseEl.hidden)closePause();else if(inGame())openPause()});
+
+/* ───────────── 三分大賽：五個點各五球，每點最後一顆花球算 2 分，滿分 30。連進越多綠區越窄 ───────────── */
+LV.tp={name:'三分大賽',pull:0,react:.5,read:0,aim:.2,move:0,steal:0,bite:0,block:0};
+const SPOTS=[[-5.8,2.4,'左邊底角'],[-4.4,5.9,'左側 45 度'],[0,7.72,'弧頂'],[4.4,5.9,'右側 45 度'],[5.8,2.4,'右邊底角']];
+const Contest={on:false,i:0,score:0,streak:0,made:0,shot:0,pick:'reg',
+  start(){
+    this.on=true;this.i=0;this.score=0;this.streak=0;this.made=0;this.shot=0;this.pick=G.level;Foe.kit=null;
+    Inp.x=Inp.z=Inp.mag=0;Inp.a=Inp.b=false;startAmb();showHud('最佳');
+    G.solo=true;newGame(false,'tp');dressUp();Object.assign(G.hintN,{atk:9,def:9,foe:9,shoe:9});
+    BODIES[1].root.visible=false;clockBox.classList.remove('low');
+    this.ball(true);banner(SPOTS[0][2],'第 1 個點，共 5 個','small');
+    hint('tp','長按投籃，白條走到綠區放開。每個點第 5 顆是花球，算 2 分；連進越多，綠區越窄。',1);
+    wake();
+  },
+  // 發下一顆球：用檢查球把人送到投籃點、球回到手上；對手停在場邊不參與
+  ball(move){
+    const s=SPOTS[Math.floor(this.i/5)],me=G.p[G.me],foe=G.p[1-G.me];
+    toCheck(G.me);G.pt=move?.2:.6;
+    me.tx=s[0];me.tz=s[1];foe.x=foe.tx=5.7;foe.z=foe.tz=11.2;
+    G.gwK=Math.max(.45,1-.09*this.streak);this.shot=0;
+  },
+  tick(){
+    if(!this.on)return;
+    const me=G.p[G.me],b=G.ball;
+    G.score=[0,0];G.next=G.off=G.me;Inp.x=Inp.z=Inp.mag=0;
+    setTxt($('#s0'),String(this.score));setTxt($('#s1'),String(Save.tp||0));setTxt(clockEl,String(25-this.i));
+    // 發球期間就按住投籃：一開放就直接開始蓄力，不用放開重按
+    if(G.phase==='play'&&G.holder===me&&me.s==='free'&&me.pb&&Inp.b)me.pb=false;
+    // 沒進：球碰框後掉下來、或飛太久，就換下一顆（進球由 score 事件處理）
+    if(this.shot&&G.phase==='play'&&b.mode==='loose'&&(b.y<1.7||G.t-this.shot>2.6))this.next(false);
+  },
+  ev(k,d){
+    if(k==='release'&&d.p===G.me)this.shot=G.t;
+    else if(k==='score')this.next(true);
+    else if(k==='clock'||k==='looseTimeout')this.next(false);
+  },
+  next(made){
+    const money=this.i%5===4;
+    if(made){this.score+=money?2:1;this.made++;this.streak++;SFX.swish();if(money)SFX.cheer()}
+    else this.streak=0;
+    this.i++;
+    if(this.i>=25){this.finish();return}
+    const move=this.i%5===0;
+    this.ball(move);
+    banner(made?(money?'+2':'+1'):'沒進',this.i%5===4?'下一顆是花球，算 2 分':move?'換到'+SPOTS[this.i/5][2]:this.streak>=3?`連進 ${this.streak} 球，綠區變窄`:'','small '+(made?'you':''));
+  },
+  finish(){
+    const best=Save.tp||0,score=this.score,made=this.made,rec=score>best,xp=10+score*2,before=lvOf(Save.xp).l;
+    if(rec)Save.tp=score;
+    Save.xp+=xp;store();this.stop();
+    const res=$('#result'),sm=document.createElement('small'),L=lvOf(Save.xp);
+    res.hidden=false;res.textContent=`${score} / 30`;
+    sm.textContent=`三分大賽：25 投 ${made} 中`+(rec?'，新紀錄！':`，最佳 ${best} 分`);res.append(sm);
+    const el=$('#recap');el.innerHTML=`+${xp} 經驗 · <b>Lv.${L.l} ${L.title}</b>${L.l>before?' 升級！':''}`;el.hidden=false;
+    menu.classList.add('ended');$('#go').textContent='再挑戰一次';again=()=>Contest.start();
+  },
+  stop(){
+    this.on=false;G.level=this.pick;BODIES[1].root.visible=true;lastClock=-1;lastS=[-1,-1];$('#s0')._v=$('#s1')._v=clockEl._v=null;
+    btnA.style.visibility='';$('#btnC').style.visibility='';toMenu();
+  }
+};
+window.__game={spinReady,moveKind,TP,G,get Inp(){return Inp},INP,step,drain,newGame,startGame,LV,knock,setS,startShot,updBody,BODIES,cam,Net,Contest,Save,openPause,closePause,get paused(){return paused}};
 window.claude?.hot?.snapshot?.(()=>({level:G.level}));
 if(saved&&saved.level&&LV[saved.level])G.level=saved.level;
 newGame(true,G.level);
