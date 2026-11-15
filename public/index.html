@@ -1877,7 +1877,16 @@ const paintTag=()=>{if(!Net.on)tagLine(`河濱 3 號場，一對一，先到 ${S
 const wake=()=>{try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}};
 if(window.__ONLINE){
   const ALPHA='ABCDEFGHJKMNPQRSTUVWXYZ23456789',lobby=$('#lobby'),lobState=$('#lobState'),netWait=$('#netWait'),foot=document.querySelector('.foot');
-  const token=(()=>{let t;try{t=sessionStorage.getItem('dh-tok')}catch(e){}if(!t){t=Math.random().toString(36).slice(2,12)+Math.random().toString(36).slice(2,6);try{sessionStorage.setItem('dh-tok',t)}catch(e){}}return t})();
+  // 這個分頁的身分（重連、重新整理時伺服器靠它認人）。固定 24 碼，不會因為亂數剛好很短而被伺服器拒絕
+  const token=(()=>{
+    let t;try{t=sessionStorage.getItem('dh-tok')}catch(e){}
+    if(!t||t.length<6){
+      try{t=Array.from(crypto.getRandomValues(new Uint8Array(12)),b=>b.toString(36).padStart(2,'0')).join('')}
+      catch(e){t=(Math.random().toString(36)+'00000000000000').slice(2,14)+(Math.random().toString(36)+'00000000000000').slice(2,14)}
+      try{sessionStorage.setItem('dh-tok',t)}catch(e){}
+    }
+    return t;
+  })();
   const wsUrl=path=>(location.protocol==='https:'?'wss://':'ws://')+location.host+path;
   const send=o=>{if(Net.ws&&Net.ws.readyState===1)Net.ws.send(JSON.stringify(o))};
   const say=t=>{lobState.textContent=t};

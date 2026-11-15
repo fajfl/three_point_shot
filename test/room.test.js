@@ -175,6 +175,12 @@ test('同一支手機換新連線：舊連線被關掉並收到通知，比賽�
   assert.notEqual(room.sim.G.phase, 'check', '沒有真的暫停過就不重新檢查球');
 });
 
+test('同一條連線不能用兩個身分佔兩個位子', () => {
+  const room = new Room(), a = sock();
+  join(room, a, 'token-aaaa'); join(room, a, 'token-zzzz');
+  assert.equal(room.count(), 1); assert.equal(room.seats[1], null);
+});
+
 test('第三個人進不了已滿的房間；比賽中別人不能頂替斷線的位子', t => {
   timers(t);
   const room = new Room(), { a, b } = start(room);

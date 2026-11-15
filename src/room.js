@@ -137,6 +137,9 @@ export class Room {
     // 規則版本不同（通常是手機還留著舊版頁面）：預測會對不上，請對方重新整理
     if (m.v !== ver()) { sock.send(JSON.stringify({ t: 'ver', v: ver() })); return; }
     if (!validKey(m.k)) { sock.send('{"t":"full"}'); return; }
+    // 一條連線只能坐一個位子
+    const mine = this.seats.find(s => s && s.sock === sock);
+    if (mine && mine.k !== m.k) return;
     let i = this.seats.findIndex(s => s && s.k === m.k);
     if (i < 0) i = this.seats.findIndex(s => !s);
     if (i < 0) { sock.send('{"t":"full"}'); return; }
